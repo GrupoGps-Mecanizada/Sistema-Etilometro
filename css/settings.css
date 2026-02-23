@@ -1,0 +1,167 @@
+/* ===================== SETTINGS VIEW ===================== */
+#settings-view {
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto
+}
+
+.settings-section {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.settings-section-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-2);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-section-header svg {
+    width: 14px;
+    height: 14px;
+    color: var(--accent)
+}
+
+.settings-section-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px
+}
+
+.sup-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    align-self: start;
+}
+
+.sup-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0
+}
+
+.sup-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green)60
+}
+
+.sup-dot.inactive {
+    background: var(--text-3)
+}
+
+.sup-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sup-regime {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    white-space: nowrap;
+}
+
+.toggle-btn {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all .15s;
+    white-space: nowrap;
+}
+
+.toggle-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent)
+}
+
+.settings-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px
+}
+
+.sem-id-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px
+}
+
+.sem-id-item {
+    background: var(--bg-2);
+    border: 1px solid var(--red)30;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sem-id-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600
+}
+
+.sem-id-input {
+    padding: 5px 10px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    width: 130px;
+    outline: none;
+}
+
+.sem-id-input:focus {
+    border-color: var(--accent)
+}
+
+.sem-id-save {
+    padding: 5px 12px;
+    background: var(--green)20;
+    border: 1px solid var(--green)50;
+    border-radius: 5px;
+    color: var(--green);
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    transition: all .15s;
+}
+
+.sem-id-save:hover {
+    background: var(--green)30
+}

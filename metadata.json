@@ -1,0 +1,5 @@
+{
+  "name": "Sistema de Etilometria Digital",
+  "description": "Sistema de registro de testes de etilômetro com assinatura digital e integração Google Sheets",
+  "requestFramePermissions": []
+}

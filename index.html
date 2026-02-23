@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema de Etilometria Digital</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- CSS Modules -->
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/topbar.css" />
+  <link rel="stylesheet" href="css/search.css" />
+  <link rel="stylesheet" href="css/history.css" />
+  <link rel="stylesheet" href="css/settings.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/drawer.css" />
+  <link rel="stylesheet" href="css/modal.css" />
+  <link rel="stylesheet" href="css/toast.css" />
+
+  <!-- Etilometria specifics -->
+  <link rel="stylesheet" href="css/forms.css" />
+
+  <!-- Icons (Lucide) -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
+
+  <style>
+    /* Utility */
+    .hidden {
+      display: none !important;
+    }
+
+    .view {
+      display: none;
+    }
+
+    /* Form Panels Styling */
+    .panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="login-screen">
+    <div class="login-box">
+      <!-- Use lucide database icon or some icon as logo since we don't have img/logo.png here -->
+      <div style="text-align:center; margin-bottom: 24px; color: var(--primary);">
+        <i data-lucide="shield-check" style="width: 64px; height: 64px;"></i>
+      </div>
+      <h2 class="login-title">Etilometria Digital</h2>
+      <form id="login-form">
+        <div class="login-input-group">
+          <label>Usuário</label>
+          <input type="text" id="login-user" required autocomplete="username" />
+        </div>
+        <div class="login-input-group">
+          <label>Senha</label>
+          <input type="password" id="login-pass" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="login-btn" id="login-submit">Entrar</button>
+      </form>
+      <div class="login-error" id="login-error"></div>
+    </div>
+    <div class="login-footer">
+      Desenvolvido por Warlison Abreu
+    </div>
+  </div>
+
+  <div id="app">
+
+    <!-- ==================== LOADING SCREEN ==================== -->
+    <div id="loading-screen" style="background:#f4f7fa; color:#0f3868">
+      <div class="loading-content">
+        <div style="margin-bottom:24px;">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#0f3868" stroke-width="2"
+            class="loading-spinner">
+            <path
+              d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83">
+            </path>
+          </svg>
+        </div>
+        <h1 style="color:#0f3868; font-weight:800; letter-spacing:1px; margin-bottom:8px">SGE</h1>
+        <div class="loading-subtitle" style="color:#555; font-weight:500;">ETILOMETRIA DIGITAL</div>
+        <div class="loading-bar-container" style="background:rgba(15, 56, 104, 0.1)">
+          <div class="loading-bar" style="background:#0f3868"></div>
+        </div>
+        <div id="loading-status" style="color:#666; font-size:13px; font-weight:500">Inicializando...</div>
+      </div>
+    </div>
+
+    <!-- Injecting simple CSS for the new loading spinner -->
+    <style>
+      .loading-spinner {
+        animation: spin 2s linear infinite;
+        opacity: 0.8;
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #loading-screen {
+        z-index: 9999;
+      }
+    </style>
+
+    <!-- ==================== TOPBAR ==================== -->
+    <div id="topbar">
+      <div class="logo">
+        SGE <span>Etilometria</span>
+      </div>
+
+      <!-- Hamburger Button (Mobile Only) -->
+      <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Abrir Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <div id="nav" class="nav-modules">
+        <div class="nav-module active">
+          <button class="module-title" data-view="aplicacao">
+            Aplicação
+          </button>
+        </div>
+        <div class="nav-module">
+          <button class="module-title" data-view="pesquisa">
+            Pesquisa
+          </button>
+        </div>
+        <div class="nav-module">
+          <button class="module-title" data-view="relatorio">
+            Relatório
+          </button>
+        </div>
+        <div class="nav-module">
+          <button class="module-title" data-view="dashboard">
+            Dashboard
+          </button>
+        </div>
+        <div class="nav-module">
+          <button class="module-title" data-view="settings">
+            Configurações
+          </button>
+        </div>
+      </div>
+
+      <div id="topbar-right">
+        <div id="topbar-user"
+          style="display:flex; align-items:center; border-right:1px solid var(--border); padding-right:12px; margin-right:4px;">
+        </div>
+        <div class="stats-pill">Testes Hoje: <strong id="stat-testes">—</strong></div>
+        <button id="refresh-btn" title="Recarregar dados">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4" />
+            <path d="M14 2v4h-4M2 14v-4h4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <div id="main">
+
+      <!-- APLICAÇÃO VIEW -->
+      <div id="aplicacao-view" class="view active"
+        style="padding: 24px; max-width: 600px; margin: 0 auto; width: 100%; overflow-y: auto;">
+
+        <!-- Setup (Shown initially) -->
+        <div id="aplicacao-setup"
+          style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 100%;">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-2" style="margin-bottom: 8px;">
+            <i data-lucide="power" class="text-blue-600"></i> Iniciar Plantão
+          </h2>
+          <p class="text-sm text-slate-500 mb-6" style="margin-bottom: 24px; color: var(--text-2);">Preencha os dados do
+            plantão atual. Eles serão usados para todos os
+            testes desta sessão.</p>
+
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label>Operador Responsável *</label>
+            <input type="text" id="setup-operador" placeholder="Seu nome completo"
+              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+          </div>
+
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label>Nº Série Aparelho *</label>
+            <input type="text" id="setup-num-serie" placeholder="Ex: BAF-1234"
+              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+          </div>
+
+          <div class="form-field" style="margin-bottom: 24px;">
+            <label>Local do Teste *</label>
+            <input type="text" id="setup-local" placeholder="Ex: Portaria Principal"
+              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+          </div>
+
+          <button id="btn-start-session" class="btn-primary"
+            style="width: 100%; display: flex; align-items: center; justify-content: center; height: 48px; gap: 8px; font-size: 14px; font-weight: 600; border-radius: 8px;">
+            <i data-lucide="play-circle"></i> Iniciar Aplicação de Testes
+          </button>
+        </div>
+
+        <!-- Fila/Execução (Shown after Setup) -->
+        <div id="aplicacao-queue" class="hidden"
+          style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 100%;">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+            <h2
+              style="font-size: 1.1rem; font-weight: 700; color: var(--text-1); display: flex; align-items: center; gap: 8px; margin: 0;">
+              <i data-lucide="users" style="color: var(--accent);"></i> Novo Teste
+            </h2>
+            <div style="font-size: 12px; color: var(--text-3);" id="current-session-info">Plantão Ativo</div>
+          </div>
+
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label>Nome do Colaborador *</label>
+            <input type="text" id="queue-nome"
+              style="font-size: 1.1rem; font-weight: 600; background: #f9f9fb; border: 1px solid #d1d5db;"
+              placeholder="Nome completo" autofocus />
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <div class="form-field" style="flex: 1;">
+              <label>CPF / Matrícula</label>
+              <input type="text" id="queue-cpf" style="background: #f9f9fb; border: 1px solid #d1d5db;"
+                placeholder="000.000.000-00" />
+            </div>
+            <div class="form-field" style="flex: 1;">
+              <label>Função *</label>
+              <input type="text" id="queue-funcao" style="background: #f9f9fb; border: 1px solid #d1d5db;"
+                placeholder="Ex: Motorista" />
+            </div>
+          </div>
+
+          <div class="fast-result-box"
+            style="background: #f8fafc; padding: 24px; border-radius: 8px; border: 1px solid #cbd5e1; margin: 24px 0; text-align: center;">
+            <div
+              style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 16px;">
+              Resultado da Medição (mg/L)
+            </div>
+            <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px;">
+              <button id="btn-result-dec" type="button"
+                style="background: #fff; border: 1px solid #cbd5e1; border-radius: 50%; width: 48px; min-width: 48px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; flex-shrink: 0;">
+                <i data-lucide="minus"></i>
+              </button>
+              <input type="number" id="queue-resultado" value="0.00" step="0.01" inputmode="decimal"
+                style="font-size: 3.5rem; text-align: center; font-weight: 800; width: 160px; border: none; background: transparent; color: #0f172a; outline: none; margin: 0; padding: 0;" />
+              <button id="btn-result-inc" type="button"
+                style="background: #fff; border: 1px solid #cbd5e1; border-radius: 50%; width: 48px; min-width: 48px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; flex-shrink: 0;">
+                <i data-lucide="plus"></i>
+              </button>
+            </div>
+            <div id="fast-status-badge"
+              style="font-weight: 800; font-size: 1.25rem; color: #16a34a; margin-top: 16px; letter-spacing: 1px;">
+              NEGATIVO</div>
+          </div>
+
+          <div class="form-field" style="margin-bottom: 24px;">
+            <label>Observações (Opcional)</label>
+            <input type="text" id="queue-obs" style="background: #f9f9fb; border: 1px solid #d1d5db;"
+              placeholder="Observações..." />
+          </div>
+
+          <!-- COLETAR ASSINATURA -->
+          <div style="margin-bottom: 24px;">
+            <button id="btn-open-signature" type="button"
+              style="width: 100%; display: flex; align-items: center; justify-content: center; height: 54px; gap: 8px; font-size: 14px; font-weight: 600; border-radius: 8px; border: 2px dashed #94a3b8; color: #475569; background: #f8fafc; cursor: pointer; transition: all 0.2s;">
+              <i data-lucide="pen-tool"></i> Coletar Assinatura do Colaborador *
+            </button>
+            <div id="signature-status-msg"
+              style="display:none; text-align: center; color: #16a34a; font-size: 13px; font-weight: 600; margin-top: 8px;">
+              <i data-lucide="check-circle"
+                style="width: 14px; height: 14px; display: inline-block; vertical-align: text-bottom;"></i> Assinatura
+              coletada e pronta para envio.
+            </div>
+          </div>
+
+          <button id="btn-sig-confirm" class="btn-primary" disabled
+            style="width: 100%; display: flex; align-items: center; justify-content: center; height: 48px; gap: 8px; font-size: 15px; font-weight: 700; border-radius: 8px; background: #4a7fd7; color: white; border: none; opacity: 0.5; cursor: not-allowed;">
+            <i data-lucide="check"></i> Salvar Teste
+          </button>
+
+          <button id="btn-end-session" class="btn-cancel" type="button"
+            style="width: 100%; display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 6px; margin-top: 16px; font-weight: 600; cursor: pointer; color: #ef4444; background: transparent; border: 1px solid #fca5a5;">
+            Encerrar Plantão
+          </button>
+        </div>
+      </div>
+
+      <!-- PESQUISA VIEW -->
+      <div id="pesquisa-view" class="view" style="padding: 24px; overflow-y: auto;">
+        <div id="search-bar">
+          <input type="text" id="search-input" placeholder="Pesquisar por nome do colaborador ou matrícula..." />
+        </div>
+        <div id="search-loading" style="display:none; text-align:center; padding: 2rem; color: var(--slate-500);">
+          <i data-lucide="loader" class="rotating" style="margin: 0 auto 1rem auto;"></i>
+          <p>Buscando resultados...</p>
+        </div>
+        <div id="search-results"
+          style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px;">
+          <div
+            class="text-center text-slate-400 py-8 text-sm border border-slate-200 border-dashed rounded-lg bg-slate-50"
+            style="grid-column: 1 / -1;">
+            Utilize a barra de pesquisa acima para procurar testes específicos.
+          </div>
+        </div>
+      </div>
+
+      <!-- RELATÓRIO VIEW -->
+      <div id="relatorio-view" class="view" style="padding: 24px; overflow-y: auto;">
+        <div class="history-filters" style="display:flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+          <input type="date" class="history-filter-input" id="filter-date"
+            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;" />
+          <input type="text" class="history-filter-input" id="filter-name" placeholder="Filtrar colaborador..."
+            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 200px;" />
+          <select class="history-filter-input" id="filter-status"
+            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <option value="">Status (Todos)</option>
+            <option value="NEGATIVO">Negativo</option>
+            <option value="ATENÇÃO">Atenção</option>
+            <option value="POSITIVO">Positivo</option>
+          </select>
+          <button id="export-btn" class="btn btn-secondary" style="background:#fff; border: 1px solid var(--border);">
+            <i data-lucide="download"></i> Exportar CSV
+          </button>
+        </div>
+
+        <div id="history-table-wrap"
+          style="background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: auto; max-height: calc(100vh - 200px);">
+          <table id="history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+            <thead style="background: var(--slate-50); position: sticky; top: 0; z-index: 10;">
+              <tr>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Data/Hora</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Colaborador</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  CPF/Mat</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Aparelho</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Resultado</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Status</th>
+                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
+                  Operador</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+          <div id="history-empty" style="display:none; text-align:center; padding: 24px; color: var(--slate-500);">
+            Nenhum teste encontrado para os filtros selecionados.</div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD VIEW -->
+      <div id="dashboard-view" class="view" style="padding: 24px; overflow-y: auto;">
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="kpi-card"
+            style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); display:flex; flex-direction: column;">
+            <span style="color: var(--slate-500); font-size: 0.85rem; font-weight: 600;">Testes Realizados (Hoje)</span>
+            <strong id="kpi-testes-hoje" style="font-size: 2rem; color: var(--blue-700); margin-top: 8px;">0</strong>
+          </div>
+          <div class="kpi-card"
+            style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); display:flex; flex-direction: column;">
+            <span style="color: var(--slate-500); font-size: 0.85rem; font-weight: 600;">Casos de Atenção</span>
+            <strong id="kpi-casos-atencao" style="font-size: 2rem; color: #d97706; margin-top: 8px;">0</strong>
+          </div>
+          <div class="kpi-card"
+            style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); display:flex; flex-direction: column;">
+            <span style="color: var(--slate-500); font-size: 0.85rem; font-weight: 600;">Casos Positivos</span>
+            <strong id="kpi-casos-positivo"
+              style="font-size: 2rem; color: var(--danger-text); margin-top: 8px;">0</strong>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+          <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <h3
+              style="margin-top:0; color: var(--slate-700); font-size: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+              Volume de Testes (Últimos 7 dias)</h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+              <canvas id="chart-volume" style="width:100%; height: 100%;"></canvas>
+            </div>
+          </div>
+          <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <h3
+              style="margin-top:0; color: var(--slate-700); font-size: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+              Status Diário</h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+              <canvas id="chart-status" style="width:100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS VIEW -->
+      <div id="settings-view" class="view"
+        style="padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; overflow-y: auto;">
+        <div class="panel" style="margin-bottom: 24px;">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
+            <i data-lucide="settings" class="text-blue-600"></i> Configurações do Sistema
+          </h2>
+
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label>URL Backend Etilometria (Google Apps Script)</label>
+            <input type="text" id="config-url" placeholder="https://script.google.com/.../exec" />
+            <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Este script é responsável por salvar e
+              consultar os logs de etilometria.</div>
+          </div>
+
+          <div class="form-field" style="margin-bottom: 24px;">
+            <label>URL Banco Gestão Efetivo (Leitura Opcional)</label>
+            <input type="text" id="config-efetivo-url" placeholder="https://script.google.com/.../exec" />
+            <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Conecta à base de dados do SGE Gestão
+              de Efetivo para preenchimento rápido de nomes.</div>
+          </div>
+
+          <button id="btn-save-settings" class="btn-primary"
+            style="display: flex; align-items: center; padding: 12px 24px; gap: 8px;">
+            <i data-lucide="save"></i> Salvar Configurações
+          </button>
+        </div>
+
+        <div class="panel">
+          <h3 style="font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Cache Local e Offline</h3>
+          <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">Se o sistema ficar offline, os testes
+            continuarão funcionando e serão processados localmente.</p>
+          <button id="btn-clear-cache" class="btn-danger"
+            style="display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 6px; cursor: pointer;">
+            <i data-lucide="trash-2"></i> Limpar Testes Pendentes/Locais
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== DRAWER ==================== -->
+    <div id="drawer-overlay"></div>
+    <div id="drawer">
+      <div id="drawer-header">
+        <div>
+          <div id="drawer-title">—</div>
+          <div id="drawer-id">—</div>
+        </div>
+        <button id="drawer-close">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3l10 10M13 3L3 13" />
+          </svg>
+        </button>
+      </div>
+      <div id="drawer-body"></div>
+      <div id="drawer-footer">
+        <button class="drawer-btn" data-action="print">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Imprimir / Baixar Comprovante
+        </button>
+      </div>
+      <div
+        style="text-align:center; padding: 12px; font-size: 10px; color: var(--text-3); border-top: 1px solid var(--border);">
+        SISTEMA ETILOMETRIA DIGITAL
+      </div>
+    </div>
+
+    <!-- ==================== MODAL ==================== -->
+    <div id="modal-overlay">
+      <div id="modal">
+        <div class="modal-header">
+          <div class="modal-title">—</div>
+        </div>
+        <div class="modal-body"></div>
+        <div class="modal-footer"></div>
+      </div>
+    </div>
+
+    <!-- ==================== TOAST ==================== -->
+    <div id="toast-container"></div>
+  </div>
+
+  <!-- ==================== SIGNATURE OVERLAY ==================== -->
+  <div id="signature-overlay"
+    style="display: none; position: fixed; inset: 0; z-index: 9999; background: #f1f5f9; flex-direction: column;">
+    <div
+      style="background: #ffffff; padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d1d5db; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+      <div style="font-weight: 700; color: #0f172a; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="pen-tool"></i> Assinatura do Colaborador
+      </div>
+      <button id="btn-sig-cancel" type="button"
+        style="background: transparent; border: none; font-size: 14px; font-weight: 600; color: #ef4444; cursor: pointer; padding: 8px;">Cancelar</button>
+    </div>
+
+    <!-- Area rotacionável visualmente -->
+    <div style="flex: 1; display: flex; flex-direction: column; position: relative; padding-bottom: 70px;">
+      <div
+        style="position: absolute; inset: 16px; bottom: 86px; background: #ffffff; border-radius: 12px; border: 2px dashed #cbd5e1; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <canvas id="signature-canvas" style="width: 100%; height: 100%; touch-action: none; display: block;"></canvas>
+
+        <div id="signature-placeholder"
+          style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #94a3b8; font-weight: 800; font-size: 1.5rem; pointer-events: none; opacity: 0.5;">
+          <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="opacity: 0.7;">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <path d="M12 12h.01" />
+            </svg>
+            UTILIZE O CELULAR NA HORIZONTAL
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div
+      style="position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff; padding: 12px 16px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 6px rgba(0,0,0,0.05); z-index: 10;">
+      <button id="btn-sig-clear" type="button"
+        style="display: flex; align-items: center; gap: 8px; border: 1px solid #d1d5db; background: #f8fafc; color: #475569; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+        <i data-lucide="eraser"></i> Limpar
+      </button>
+      <button id="btn-sig-done" type="button"
+        style="display: flex; align-items: center; gap: 8px; border: none; background: #4a7fd7; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer;">
+        <i data-lucide="check"></i> Confirmar
+      </button>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- JS Modules (order matters) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/api.js"></script>
+
+  <!-- UI Components -->
+  <script src="js/helpers.js"></script>
+  <script src="js/drawer.js"></script>
+  <script src="js/modal.js"></script>
+
+  <!-- Feature Modules -->
+  <script src="js/aplicacao.js"></script>
+  <script src="js/pesquisa.js"></script>
+  <script src="js/relatorio.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/settings.js"></script>
+
+  <!-- Navigation and App init -->
+  <script src="js/auth.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/signature.js"></script>
+
+  <script src="js/app.js"></script>
+
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>
