@@ -43,6 +43,8 @@ SGE_ETL.signature = {
         this.canvas.height = rect.height;
 
         this.ctx = this.canvas.getContext('2d');
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.strokeStyle = '#0f3868';
         this.ctx.lineWidth = 3;
         this.ctx.lineCap = 'round';
@@ -89,7 +91,8 @@ SGE_ETL.signature = {
 
     clear() {
         if (!this.canvas) return;
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.hasDrawn = false;
 
         const placeholder = document.getElementById('signature-placeholder');
@@ -129,9 +132,13 @@ SGE_ETL.signature = {
 
         // Timeout para garantir que o display 'flex' renderizou e obteve dimensões antes do resize
         setTimeout(() => {
-            this.resizeCanvas();
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            // Redesenhar o traço se já houver
+            if (!this.hasDrawn) {
+                this.resizeCanvas();
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            } else {
+                this.resizeCanvas();
+            }
         }, 150);
     },
 
