@@ -449,10 +449,16 @@
             <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-1); margin:0;">Pendências do Dia</h2>
             <p style="font-size:13px; color:var(--text-2); margin:4px 0 0;">Colaboradores que ainda não realizaram o teste de etilometria hoje.</p>
           </div>
-          <button id="btn-refresh-pendentes" class="topbar-icon-btn" title="Atualizar lista" style="width:auto; padding:0 12px; gap:6px;">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/><path d="M14 2v4h-4M2 14v-4h4"/></svg>
-            Atualizar
-          </button>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-copiar-pendentes" class="btn btn-secondary" title="Copiar Lista para WhatsApp" style="background:#fff; border:1px solid var(--border); border-radius:6px; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copiar Faltantes
+            </button>
+            <button id="btn-refresh-pendentes" class="topbar-icon-btn" title="Atualizar lista" style="width:auto; padding:0 12px; gap:6px;">
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/><path d="M14 2v4h-4M2 14v-4h4"/></svg>
+              Atualizar
+            </button>
+          </div>
         </div>
 
         <!-- Resumo rápido -->

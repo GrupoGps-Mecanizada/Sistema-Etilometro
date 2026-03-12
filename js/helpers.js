@@ -51,5 +51,49 @@ SGE_ETL.helpers = {
         const testes = SGE_ETL.state.testes_diario ? Object.keys(SGE_ETL.state.testes_diario).length : 0;
         const statEl = document.getElementById('stat-testes');
         if (statEl) statEl.textContent = testes;
+    },
+
+    calcularTurno(dataFiltro, turma) {
+        if (!dataFiltro || !turma) return 'F';
+        // 1. Cria a data alvo com segurança de Fuso Horário
+        const dataAlvo = new Date(`${dataFiltro}T12:00:00Z`);
+
+        // ==========================================
+        // LÓGICA DO TURNO ADMINISTRATIVO (ADM)
+        // ==========================================
+        if (turma.toUpperCase() === 'ADM') {
+            const diaSemana = dataAlvo.getUTCDay(); // 0 = Domingo, 1 = Segunda ... 6 = Sábado
+            if (diaSemana === 0 || diaSemana === 6) {
+                return "F"; // Folga no fim de semana
+            } else {
+                return "ADM"; // Retorna 'ADM'
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DO TURNO ININTERRUPTO (A, B, C, D) E SUAS VARIAÇÕES
+        // ==========================================
+        // Extrai a letra principal caso seja algo como "24HS-A" ou "A - 07 as 19"
+        const t = turma.toUpperCase();
+        let letra = null;
+        if (t.includes('A')) letra = 'A';
+        else if (t.includes('B')) letra = 'B';
+        else if (t.includes('C')) letra = 'C';
+        else if (t.includes('D')) letra = 'D';
+        else return "F"; // Se não tem letra legível, assume folga
+
+        const ciclo = ["07", "07", "19", "19", "F", "F", "F", "F"];
+        const offsets = { 'A': 0, 'B': 4, 'C': 2, 'D': 6 };
+        
+        // Data base fixada: 2026-03-11 ao meio-dia (UTC)
+        const dataBase = new Date("2026-03-11T12:00:00Z");
+        
+        const diffTempo = dataAlvo.getTime() - dataBase.getTime();
+        const diffDias = Math.floor(diffTempo / (1000 * 3600 * 24));
+
+        // A fórmula matemática pura para o loop contínuo
+        const index = ((diffDias + offsets[letra]) % 8 + 8) % 8;
+        
+        return ciclo[index];
     }
 };

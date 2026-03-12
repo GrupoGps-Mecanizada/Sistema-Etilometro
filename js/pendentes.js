@@ -36,7 +36,7 @@ SGE_ETL.pendentes = {
                 window.supabase
                     .schema('gps_mec')
                     .from('efetivo_gps_mec_colaboradores')
-                    .select('id, name, function, status')
+                    .select('id, name, function, status, regime')
                     .neq('status', 'DESLIGADO')
                     .order('name'),
                 window.supabase
@@ -60,10 +60,25 @@ SGE_ETL.pendentes = {
                 if (t.colaborador_nome) testedNames.add(t.colaborador_nome.trim().toUpperCase());
             });
 
-            // Filter pendentes: no test today
+            // Filter pendentes: no test today AND not on their day off
+            const todayStr = new Date().toISOString().split('T')[0];
+            
             const pendentes = colaboradores.filter(c => {
                 if (this.testedIds.has(c.id)) return false;
                 if (testedNames.has((c.name || '').trim().toUpperCase())) return false;
+                
+                // Exclude people whose regime says they are off today
+                // For this, we calculate dynamically via the helper using their regime string.
+                if (c.regime) {
+                    const turnoHoje = window.SGE_ETL.helpers.calcularTurno(todayStr, c.regime);
+                    if (turnoHoje === 'F') {
+                        return false;
+                    }
+                } else {
+                    // Se a pessoa não tem regime preenchido (''), se não quiser cobrar ela, return false.
+                    // Senão, return true para cobrar sempre quem não tem escala.
+                }
+
                 return true;
             });
 
@@ -131,9 +146,55 @@ SGE_ETL.pendentes = {
             refreshBtn.addEventListener('click', () => this.load());
         }
 
+        const btnCopiar = document.getElementById('btn-copiar-pendentes');
+        if (btnCopiar) {
+            btnCopiar.addEventListener('click', () => this.copiarFaltantes());
+        }
+
         const searchInput = document.getElementById('pend-search');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filter(e.target.value));
         }
+    },
+
+    copiarFaltantes() {
+        if (!this.allColaboradores || this.allColaboradores.length === 0) {
+            if (window.SGE_ETL.helpers && window.SGE_ETL.helpers.toast) {
+                window.SGE_ETL.helpers.toast("Nenhum colaborador pendente para copiar.", "warning");
+            } else {
+                alert("Nenhum colaborador pendente para copiar.");
+            }
+            return;
+        }
+        
+        const dateStr = new Date().toLocaleDateString('pt-BR');
+        let text = `*Faltantes - Teste Etilômetro (${dateStr})*\n\n`;
+        
+        // Group by regime
+        const porRegime = {};
+        this.allColaboradores.forEach(c => {
+            const r = c.regime || 'Sem Turma';
+            if (!porRegime[r]) porRegime[r] = [];
+            porRegime[r].push(c);
+        });
+        
+        Object.keys(porRegime).sort().forEach(r => {
+            text += `*Turma ${r}*\n`;
+            porRegime[r].forEach(c => {
+                text += `- ${c.name} (${c.function || 'S/ Funç.'})\n`;
+            });
+            text += '\n';
+        });
+        
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.SGE_ETL.helpers && window.SGE_ETL.helpers.toast) {
+                window.SGE_ETL.helpers.toast('Lista copiada para a área de transferência!', 'success');
+            } else {
+                alert('Lista copiada!');
+            }
+        }).catch(err => {
+            console.error('Erro ao copiar:', err);
+            alert('Erro ao copiar lista.');
+        });
     }
 };
