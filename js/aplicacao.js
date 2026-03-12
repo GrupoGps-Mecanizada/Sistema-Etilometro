@@ -17,7 +17,6 @@ SGE_ETL.aplicacao = {
 
             // Setup
             inOperador: document.getElementById('setup-operador'),
-            inNumSerie: document.getElementById('setup-num-serie'),
             inLocal: document.getElementById('setup-local'),
             btnStart: document.getElementById('btn-start-session'),
 
@@ -66,6 +65,7 @@ SGE_ETL.aplicacao = {
         this.els.inResultado.value = '0.00';
         this.updateStatusBadge();
         this.els.inNome.focus();
+        delete this.els.inNome.dataset.colaboradorId;
         if (SGE_ETL.signature) SGE_ETL.signature.clear();
     },
 
@@ -92,24 +92,24 @@ SGE_ETL.aplicacao = {
 
         this.els.btnStart.addEventListener('click', async () => {
             const op = this.els.inOperador.value.trim();
-            const serie = this.els.inNumSerie.value.trim();
             const loc = this.els.inLocal.value.trim();
 
-            if (!op || !serie || !loc) {
-                SGE_ETL.helpers.toast('Preencha Operador, Aparelho e Local', 'error');
+            if (!op || !loc) {
+                SGE_ETL.helpers.toast('Preencha Operador e Local', 'error');
                 return;
             }
 
             const originalBtn = this.els.btnStart.innerHTML;
-            if (SGE_ETL.CONFIG.efetivoUrl && navigator.onLine && (!SGE_ETL.state.colaboradores || SGE_ETL.state.colaboradores.length === 0)) {
-                this.els.btnStart.innerHTML = `<i data-lucide="loader" class="rotating"></i> Sincronizando BD...`;
+            // Pre-load colaboradores from Supabase if not yet loaded
+            if (!SGE_ETL.state.colaboradores || SGE_ETL.state.colaboradores.length === 0) {
+                this.els.btnStart.innerHTML = `<i data-lucide="loader" class="rotating"></i> Carregando colaboradores...`;
                 this.els.btnStart.disabled = true;
 
                 const res = await SGE_ETL.api.fetchColaboradores();
                 if (res.success && res.data) {
                     SGE_ETL.state.colaboradores = res.data;
                 } else {
-                    console.warn("Sincronização de colaboradores falhou:", res.error);
+                    console.warn('Sincronização de colaboradores falhou:', res.error);
                 }
 
                 this.els.btnStart.innerHTML = originalBtn;
@@ -117,7 +117,7 @@ SGE_ETL.aplicacao = {
                 if (window.lucide) window.lucide.createIcons();
             }
 
-            SGE_ETL.state.plantao = { ativo: true, operador: op, aparelho: serie, local: loc };
+            SGE_ETL.state.plantao = { ativo: true, operador: op, aparelho: '—', local: loc };
             this.render();
             SGE_ETL.helpers.toast('Plantão Iniciado');
         });
@@ -152,6 +152,7 @@ SGE_ETL.aplicacao = {
                 }
 
                 const payload = {
+                    colaborador_id: this.els.inNome.dataset.colaboradorId || null,
                     nomeTestado: nome,
                     cpfMatricula: this.els.inCpf.value.trim(),
                     postoFuncao: func,
@@ -238,6 +239,7 @@ SGE_ETL.aplicacao = {
 
             div.addEventListener('click', () => {
                 this.els.inNome.value = c.nome;
+                this.els.inNome.dataset.colaboradorId = c.id;
                 // Use matricula or phone as fallback identifier
                 this.els.inCpf.value = c.matricula_gps || c.telefone || '';
                 this.els.inFuncao.value = c.funcao || '';

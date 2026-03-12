@@ -7,7 +7,7 @@ SGE_ETL.app = {
         const loadingScreen = document.getElementById('loading-screen');
         const loginScreen = document.getElementById('login-screen');
 
-        if (SGE_ETL.auth.init()) {
+        if (await SGE_ETL.auth.init()) {
             if (loginScreen) loginScreen.classList.add('hidden');
             SGE_ETL.app.boot();
         } else {
@@ -61,25 +61,18 @@ SGE_ETL.app = {
         };
 
         setStatus('Conectando e baixando dados do dia...');
-        if (SGE_ETL.CONFIG.gasUrl) {
-            await SGE_ETL.api.loadDiario();
-        } else {
-            setStatus('Modo Offline — Sem URL configurada');
-            await new Promise(r => setTimeout(r, 600));
-        }
+        await SGE_ETL.api.loadDiario();
 
         SGE_ETL.helpers.updateStats();
 
-        SGE_ETL.app.setupNavigation();
+        // Initialize all modules
+        SGE_ETL.navigation.init();
         SGE_ETL.app.setupDrawer();
         SGE_ETL.app.setupModal();
-        SGE_ETL.app.setupRefresh();
-
-        // Boot specific logic modules
         SGE_ETL.aplicacao.init();
         SGE_ETL.pesquisa.init();
         SGE_ETL.relatorio.init();
-        SGE_ETL.settings.init();
+        SGE_ETL.pendentes.init();
 
         SGE_ETL.navigation.switchView('aplicacao');
 
@@ -90,26 +83,6 @@ SGE_ETL.app = {
         if (loadingScreen && loadingScreen.parentNode) {
             loadingScreen.classList.add('hide');
             setTimeout(() => loadingScreen.remove(), 700);
-        }
-    },
-
-    setupNavigation() {
-        document.querySelectorAll('#nav [data-view]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                SGE_ETL.navigation.switchView(btn.dataset.view);
-                const nav = document.getElementById('nav');
-                if (nav && nav.classList.contains('mobile-open')) {
-                    nav.classList.remove('mobile-open');
-                }
-            });
-        });
-
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                const nav = document.getElementById('nav');
-                if (nav) nav.classList.toggle('mobile-open');
-            });
         }
     },
 
@@ -124,19 +97,6 @@ SGE_ETL.app = {
                 SGE_ETL.modal.close();
             }
         });
-    },
-
-    setupRefresh() {
-        const btn = document.getElementById('refresh-btn');
-        if (btn) {
-            btn.addEventListener('click', async () => {
-                SGE_ETL.helpers.toast('Recarregando dados do dia...', 'info');
-                await SGE_ETL.api.loadDiario();
-                SGE_ETL.helpers.updateStats();
-                SGE_ETL.navigation.switchView(SGE_ETL.state.activeView); // re-render
-                SGE_ETL.helpers.toast('Dados atualizados', 'success');
-            });
-        }
     }
 };
 

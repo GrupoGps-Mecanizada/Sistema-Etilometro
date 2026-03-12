@@ -1,122 +1,127 @@
 'use strict';
 
 /**
- * SGE_ETL — Authentication Module (Via Central SGE SSO com fallback local)
- * Handles token recovery, session management, and role-based permissions
- *
- * BYPASS ativo para rollout gradual — login local (mock) continua funcionando.
- * Quando a Central SSO estiver 100%, basta comentar a linha SGE_SSO_BYPASS = true.
+ * SGE_ETL — Authentication Module
+ * Mirrors Gestão Efetivo: SSO first, then Supabase local session fallback.
+ * Uses window.supabase (not window.supabaseClient).
  */
 window.SGE_ETL = window.SGE_ETL || {};
 
-// ========== SSO MODE ==========
-// BYPASS ativo para rollout gradual — login local continua funcionando
-window.SGE_SSO_BYPASS = true;
-
-// Instancia o SDK passando o slug do sistema
-const ssoClient = new window.SgeAuthSDK('etilometro_mec');
+const ssoClient = window.SgeAuthSDK ? new window.SgeAuthSDK('etilometro_mec') : null;
 
 SGE_ETL.auth = {
-    /**
-     * Initialize Auth — tenta SSO, senao fallback para login local (mock)
-     */
-    init() {
-        return this._initAsync();
-    },
+    currentUser: null,
 
-    async _initAsync() {
-        // 1. Tenta autenticacao via SSO Token
-        try {
+    async init() {
+        // 1. Try SSO authentication
+        if (ssoClient) {
             const userData = await ssoClient.checkAuth();
 
             if (userData) {
-                console.log('[ETL AUTH] Autenticado via SSO:', userData.nome);
-                SGE_ETL.state.user = {
-                    id: userData.id,
-                    nome: userData.nome || 'Usuario',
-                    email: userData.email || '',
-                    perfil: userData.perfil || 'OP'
-                };
-                this.updateTopbar();
-                await this.registerSession(userData.id);
+                console.log('[SGE_ETL AUTH] Autenticado via SSO:', userData.nome);
+                this.updateCurrentUser(userData);
+                let token = null;
+                try {
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    token = session?.access_token || null;
+                } catch (e) {}
+                await this.registerSession(userData.id, token);
                 return true;
             }
-        } catch (e) {
-            console.warn('[ETL AUTH] Erro no SSO checkAuth:', e);
-        }
 
-        if (ssoClient.isBypass()) {
-            // BYPASS: tenta login local (mock — original behavior)
-            console.log('[ETL AUTH] BYPASS ativo — verificando login local...');
-            const user = localStorage.getItem('SGE_ETL_USER');
-            if (user) {
-                SGE_ETL.state.user = { nome: user, perfil: 'OP' };
-                this.updateTopbar();
-                return true;
+            if (ssoClient.isBypass()) {
+                // 2. Bypass active — try existing Supabase session
+                console.log('[SGE_ETL AUTH] BYPASS ativo — verificando sessão Supabase local...');
+                try {
+                    if (window.supabase) {
+                        const { data: { session } } = await window.supabase.auth.getSession();
+                        if (session && session.user) {
+                            console.log('[SGE_ETL AUTH] Sessão local encontrada:', session.user.email);
+                            this.updateCurrentUser({
+                                id: session.user.id,
+                                email: session.user.email,
+                                nome: session.user.user_metadata?.nome || session.user.email.split('@')[0],
+                                perfil: session.user.user_metadata?.perfil || 'GESTAO'
+                            });
+                            await this.registerSession(session.user.id, session.access_token);
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[SGE_ETL AUTH] Erro ao verificar sessão:', e);
+                }
+
+                // No session — show login screen
+                console.log('[SGE_ETL AUTH] Sem sessão — exibindo login local');
+                return false;
             }
+
+            // SSO active but no token — SSO client will redirect
             return false;
         }
 
-        // SSO ativo mas sem token — ssoClient ja redirecionou
+        // 3. No SSO client — fallback to pure local Supabase auth
+        console.warn('[SGE_ETL AUTH] SSO Client não encontrado. Usando fallback Supabase local.');
+        try {
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session && session.user) {
+                    this.updateCurrentUser({
+                        id: session.user.id,
+                        email: session.user.email,
+                        nome: session.user.user_metadata?.nome || session.user.email.split('@')[0],
+                        perfil: session.user.user_metadata?.perfil || 'GESTAO'
+                    });
+                    return true;
+                }
+            }
+        } catch (e) {}
         return false;
     },
 
-    /**
-     * Register session in sge_central_sessoes for the Radar
-     */
-    async registerSession(userId) {
+    async registerSession(userId, accessToken) {
         try {
             const existingId = localStorage.getItem('sge_session_id');
-            if (existingId) {
-                console.log('[ETL AUTH] Sessao ja registrada:', existingId);
-                return;
+            if (existingId) return;
+
+            if (!accessToken && window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                accessToken = session?.access_token || null;
             }
-
-            // Try to get an access token from Supabase (if available)
-            let accessToken = null;
-            try {
-                if (window.supabase) {
-                    const { data: { session } } = await window.supabase.auth.getSession();
-                    accessToken = session?.access_token || null;
-                }
-            } catch (e) { /* ignore — Etilometro may not have Supabase */ }
-
             if (!accessToken) {
-                console.warn('[ETL AUTH] Sem token autenticado — sessao nao sera registrada (RLS bloqueia anon)');
+                console.warn('[SGE_ETL AUTH] Sem token — sessão não será registrada (RLS bloqueia anon)');
                 return;
             }
 
-            const SUPABASE_URL = window.SGE_ETL?.CONFIG?.SUPABASE_URL || this._getSupabaseUrl();
-            const ANON_KEY = window.SGE_ETL?.CONFIG?.SUPABASE_KEY || this._getAnonKey();
-            if (!SUPABASE_URL || !ANON_KEY) return;
+            const SUPABASE_URL = SGE_ETL.SUPABASE_URL;
+            const ANON_KEY = SGE_ETL.SUPABASE_KEY;
 
-            const headers = {
-                'apikey': ANON_KEY,
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-                'Content-Profile': 'gps_compartilhado',
-                'Accept-Profile': 'gps_compartilhado',
-                'Prefer': 'return=representation'
-            };
-
-            // Get sistema_id for this app slug
             const sysResp = await fetch(
                 `${SUPABASE_URL}/rest/v1/sge_central_sistemas?slug=eq.etilometro_mec&select=id`,
-                { headers: { 'apikey': ANON_KEY, 'Authorization': `Bearer ${accessToken}`, 'Accept-Profile': 'gps_compartilhado', 'Accept': 'application/vnd.pgrst.object+json' } }
+                {
+                    headers: {
+                        'apikey': ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept-Profile': 'gps_compartilhado',
+                        'Accept': 'application/vnd.pgrst.object+json'
+                    }
+                }
             );
 
-            if (!sysResp.ok) {
-                console.warn('[ETL AUTH] Nao conseguiu buscar sistema para sessao');
-                return;
-            }
-
+            if (!sysResp.ok) return;
             const sysData = await sysResp.json();
-            if (!sysData?.id) return;
+            if (!sysData || !sysData.id) return;
 
-            // Insert session
             const sessResp = await fetch(`${SUPABASE_URL}/rest/v1/sge_central_sessoes`, {
                 method: 'POST',
-                headers,
+                headers: {
+                    'apikey': ANON_KEY,
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Content-Profile': 'gps_compartilhado',
+                    'Accept-Profile': 'gps_compartilhado',
+                    'Prefer': 'return=representation'
+                },
                 body: JSON.stringify({
                     usuario_id: userId,
                     sistema_id: sysData.id,
@@ -133,100 +138,71 @@ SGE_ETL.auth = {
                     localStorage.setItem('sge_session_id', sessionId);
                     localStorage.setItem('sge_session_user_id', userId);
                     localStorage.setItem('sge_session_token', accessToken);
-                    localStorage.setItem('sge_session_user_name', SGE_ETL.state.user?.nome || 'Usuario');
-                    localStorage.setItem('sge_session_user_email', SGE_ETL.state.user?.email || '');
+                    localStorage.setItem('sge_session_user_name', this.currentUser?.nome || 'Usuário');
+                    localStorage.setItem('sge_session_user_email', this.currentUser?.email || '');
                     localStorage.setItem('sge_session_app_slug', 'etilometro_mec');
                     localStorage.setItem('sge_session_app_name', 'Etilometria Digital');
-                    console.log('[ETL AUTH] Sessao registrada para Radar:', sessionId);
                     if (window.SGE_SESSION_PING) window.SGE_SESSION_PING.start();
                 }
-            } else {
-                const errText = await sessResp.text().catch(() => '');
-                console.warn('[ETL AUTH] Falha ao registrar sessao:', sessResp.status, errText);
             }
         } catch (err) {
-            console.warn('[ETL AUTH] Erro ao registrar sessao:', err);
+            console.warn('[SGE_ETL AUTH] registerSession falhou:', err);
         }
     },
 
-    /**
-     * Helper: resolve Supabase URL from config or supabase client
-     */
-    _getSupabaseUrl() {
-        try {
-            if (window.supabase?.supabaseUrl) return window.supabase.supabaseUrl;
-            if (window.SGE_ETL?.CONFIG?.SUPABASE_URL) return window.SGE_ETL.CONFIG.SUPABASE_URL;
-        } catch (e) { }
-        return null;
+    updateCurrentUser(user) {
+        this.currentUser = {
+            id: user.id || null,
+            usuario: user.email ? user.email.split('@')[0] : 'Desconhecido',
+            email: user.email || '',
+            nome: user.nome || 'Usuário SGE',
+            perfil: user.perfil || 'VISAO'
+        };
+
+        SGE_ETL.state.user = this.currentUser;
+
+        const topbarUser = document.getElementById('topbar-user');
+        if (topbarUser) {
+            topbarUser.innerHTML = `
+                <div style="text-align: right; margin-right: 12px;">
+                    <div style="font-weight: 600; font-size: 13px; color: var(--slate-700);">${this.currentUser.nome.split(' ')[0]}</div>
+                    <div style="font-size: 11px; color: var(--slate-500); cursor: pointer;" onclick="SGE_ETL.auth.logout()">Sair</div>
+                </div>
+            `;
+        }
     },
 
-    _getAnonKey() {
-        try {
-            if (window.supabase?.supabaseKey) return window.supabase.supabaseKey;
-            if (window.SGE_ETL?.CONFIG?.SUPABASE_KEY) return window.SGE_ETL.CONFIG.SUPABASE_KEY;
-        } catch (e) { }
-        return null;
+    async login(email, password) {
+        if (!window.supabase) throw new Error('Supabase client não inicializado');
+        const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        this.updateCurrentUser({
+            id: data.user.id,
+            email: data.user.email,
+            nome: data.user.user_metadata?.nome || data.user.email.split('@')[0],
+            perfil: data.user.user_metadata?.perfil || 'GESTAO'
+        });
+
+        await this.registerSession(data.user.id, data.session?.access_token);
+        return { success: true, data };
     },
 
-    /**
-     * Login local (mock — preserved original behavior for BYPASS mode)
-     */
-    async login(username, password) {
-        if (!username) return { success: false, error: 'Digite seu nome de usuario' };
-
-        localStorage.setItem('SGE_ETL_USER', username);
-        SGE_ETL.state.user = { nome: username, perfil: 'OP' };
-        this.updateTopbar();
-        return { success: true };
-    },
-
-    /**
-     * Logout
-     */
-    logout() {
-        console.log('[ETL AUTH] Logout');
-
-        // Clean up session data
-        try {
-            localStorage.removeItem('sge_session_id');
-            localStorage.removeItem('sge_session_user_id');
-            localStorage.removeItem('sge_session_token');
-            localStorage.removeItem('sge_session_user_name');
-            localStorage.removeItem('sge_session_user_email');
-            localStorage.removeItem('sge_session_app_slug');
-            localStorage.removeItem('sge_session_app_name');
-        } catch (e) { }
-
-        // Stop ping
+    async logout() {
         if (window.SGE_SESSION_PING) window.SGE_SESSION_PING.stop();
+        ['sge_session_id', 'sge_session_user_id', 'sge_session_token', 'sge_session_user_name',
+         'sge_session_user_email', 'sge_session_app_slug', 'sge_session_app_name'].forEach(k => localStorage.removeItem(k));
 
-        if (ssoClient.isBypass()) {
-            localStorage.removeItem('SGE_ETL_USER');
-            location.reload();
+        if (ssoClient && ssoClient.isBypass()) {
+            if (window.supabase) await window.supabase.auth.signOut();
+            window.location.reload();
             return;
         }
 
-        ssoClient.logout();
-    },
-
-    /**
-     * Update topbar UI with user info (preserved original layout)
-     */
-    updateTopbar() {
-        const el = document.getElementById('topbar-user');
-        if (el && SGE_ETL.state.user) {
-            el.innerHTML = `
-                <div style="text-align:right">
-                    <div style="font-size:12px; font-weight:600; color:var(--text-1)">${SGE_ETL.state.user.nome}</div>
-                    <div style="font-size:10px; color:var(--text-3); display:flex; gap:4px; justify-content:flex-end">
-                        <button id="btn-logout" style="background:none; border:none; color:var(--danger-text); cursor:pointer; font-size:10px; padding:0">Sair</button>
-                    </div>
-                </div>
-                <div style="width:32px; height:32px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-left:8px; font-weight:600; color:var(--primary)">
-                    ${SGE_ETL.state.user.nome.charAt(0).toUpperCase()}
-                </div>
-            `;
-            document.getElementById('btn-logout')?.addEventListener('click', () => this.logout());
+        if (ssoClient) ssoClient.logout();
+        else {
+            if (window.supabase) await window.supabase.auth.signOut();
+            window.location.reload();
         }
     }
 };

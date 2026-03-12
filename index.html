@@ -5,6 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sistema de Etilometria Digital</title>
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self' https:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://grupogps-mecanizada.github.io https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob: https://grupogps-mecanizada.github.io;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://grupogps-mecanizada.github.io https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com;
+    object-src 'none';
+    base-uri 'self';
+  " />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- CSS Modules -->
@@ -51,9 +63,9 @@
   <!-- ==================== LOGIN SCREEN ==================== -->
   <div id="login-screen">
     <div class="login-box">
-      <!-- Use lucide database icon or some icon as logo since we don't have img/logo.png here -->
-      <div style="text-align:center; margin-bottom: 24px; color: var(--primary);">
-        <i data-lucide="shield-check" style="width: 64px; height: 64px;"></i>
+      <!-- Use lucide auth icon or some icon as logo -->
+      <div style="text-align:center; margin-bottom: 24px;">
+        <i data-lucide="shield-check" style="width:64px; height:64px; color:#0f3868;"></i>
       </div>
       <h2 class="login-title">Etilometria Digital</h2>
       <form id="login-form">
@@ -115,59 +127,86 @@
     </style>
 
     <!-- ==================== TOPBAR ==================== -->
+    <div id="global-sync-bar"></div>
     <div id="topbar">
-      <div class="logo">
-        SGE <span>Etilometria</span>
+      <!-- LEFT: Hamburger -->
+      <div id="topbar-left">
+        <button id="nav-menu-btn" class="topbar-icon-btn" aria-label="Menu de Navegação" title="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
 
-      <!-- Hamburger Button (Mobile Only) -->
-      <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Abrir Menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      <!-- CENTER: Logo compacto -->
+      <div class="logo" style="position:absolute; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; pointer-events:none;">
+        <span class="logo-gps">Grupo GPS · Mecanizada</span>
+        <div class="logo-divider"></div>
+        <span class="logo-gestao">CONTROLE DE ETILOMETRO</span>
+      </div>
 
-      <div id="nav" class="nav-modules">
-        <div class="nav-module active">
-          <button class="module-title" data-view="aplicacao">
-            Aplicação
-          </button>
-        </div>
-        <div class="nav-module">
-          <button class="module-title" data-view="pesquisa">
-            Pesquisa
-          </button>
-        </div>
-        <div class="nav-module">
-          <button class="module-title" data-view="relatorio">
-            Relatório
-          </button>
-        </div>
-        <div class="nav-module">
-          <button class="module-title" data-view="dashboard">
-            Dashboard
-          </button>
-        </div>
-        <div class="nav-module">
-          <button class="module-title" data-view="settings">
-            Configurações
-          </button>
+      <!-- Slide-in Nav Overlay -->
+      <div id="nav-menu-overlay" class="nav-menu-overlay hidden" role="dialog" aria-label="Menu de Navegação" aria-modal="true">
+        <div class="nav-menu-panel" role="navigation" aria-label="Menu principal">
+          <div class="nav-menu-header" style="justify-content:flex-start; padding:20px 16px; position:relative; align-items:center; min-height:90px;">
+            <div id="logo-home" style="display:flex; justify-content:flex-start; align-items:center; cursor:pointer; width:100%;" title="Dashboard">
+              <svg width="100%" height="60" viewBox="30 45 550 130" xmlns="http://www.w3.org/2000/svg">
+                <defs><style type="text/css">text { font-family: 'Open Sans','Roboto','Arial',sans-serif; }</style></defs>
+                <g text-anchor="start">
+                  <text x="50" y="110" font-size="42" font-weight="700" fill="#002D5C">Grupo GPS</text>
+                  <line x1="300" y1="55" x2="300" y2="155" stroke="#757575" stroke-width="1.5"/>
+                  <g transform="translate(315,0)">
+                    <text x="0" y="102" font-size="30" font-weight="600" fill="#1E6B8C">MECANIZADA</text>
+                    <text x="0" y="137" font-size="20" font-weight="400" fill="#757575">CONTROLE DE ETILOMETRO</text>
+                    <text x="235" y="158" font-size="12" font-weight="400" fill="#757575" text-anchor="end">By SGE</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <div class="nav-menu-body" style="padding-top:16px;">
+            <button class="nav-menu-item" data-view="aplicacao">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+              Aplicação de Testes
+            </button>
+            <button class="nav-menu-item" data-view="pendentes">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              Pendências do Dia
+            </button>
+            <button class="nav-menu-item" data-view="pesquisa">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Pesquisa de Testes
+            </button>
+            <button class="nav-menu-item" data-view="relatorio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Relatório Diário
+            </button>
+            <button class="nav-menu-item" data-view="dashboard">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M1 6h14"/><path d="M5 6v9"/></svg>
+              Dashboard Analítico
+            </button>
+          </div>
+          <div class="nav-menu-footer">
+            <div class="nav-menu-stats">
+              <div class="nav-menu-stat">Testes Hoje: <strong id="stat-testes-menu">—</strong></div>
+            </div>
+            <div id="nav-menu-user" class="nav-menu-user-info"></div>
+          </div>
         </div>
       </div>
 
+      <!-- RIGHT -->
       <div id="topbar-right">
-        <div id="topbar-user"
-          style="display:flex; align-items:center; border-right:1px solid var(--border); padding-right:12px; margin-right:4px;">
-        </div>
-        <div class="stats-pill">Testes Hoje: <strong id="stat-testes">—</strong></div>
-        <button id="refresh-btn" title="Recarregar dados">
+        <div id="topbar-user" style="display:flex; align-items:center; padding-right:8px;"></div>
+        <button id="refresh-btn" class="topbar-icon-btn" title="Recarregar dados">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4" />
-            <path d="M14 2v4h-4M2 14v-4h4" />
+            <path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/>
+            <path d="M14 2v4h-4M2 14v-4h4"/>
           </svg>
         </button>
       </div>
     </div>
+
 
 
     <!-- ==================== MAIN CONTENT ==================== -->
@@ -193,11 +232,6 @@
               style="background: #f9f9fb; border: 1px solid #d1d5db;" />
           </div>
 
-          <div class="form-field" style="margin-bottom: 16px;">
-            <label>Nº Série Aparelho *</label>
-            <input type="text" id="setup-num-serie" placeholder="Ex: BAF-1234"
-              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
-          </div>
 
           <div class="form-field" style="margin-bottom: 24px;">
             <label>Local do Teste *</label>
@@ -408,42 +442,50 @@
         </div>
       </div>
 
-      <!-- SETTINGS VIEW -->
-      <div id="settings-view" class="view"
-        style="padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; overflow-y: auto;">
-        <div class="panel" style="margin-bottom: 24px;">
-          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
-            <i data-lucide="settings" class="text-blue-600"></i> Configurações do Sistema
-          </h2>
-
-          <div class="form-field" style="margin-bottom: 16px;">
-            <label>URL Backend Etilometria (Google Apps Script)</label>
-            <input type="text" id="config-url" placeholder="https://script.google.com/.../exec" />
-            <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Este script é responsável por salvar e
-              consultar os logs de etilometria.</div>
+      <!-- PENDENTES VIEW -->
+      <div id="pendentes-view" class="view" style="padding: 24px; overflow-y: auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-1); margin:0;">Pendências do Dia</h2>
+            <p style="font-size:13px; color:var(--text-2); margin:4px 0 0;">Colaboradores que ainda não realizaram o teste de etilometria hoje.</p>
           </div>
-
-          <div class="form-field" style="margin-bottom: 24px;">
-            <label>URL Banco Gestão Efetivo (Leitura Opcional)</label>
-            <input type="text" id="config-efetivo-url" placeholder="https://script.google.com/.../exec" />
-            <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Conecta à base de dados do SGE Gestão
-              de Efetivo para preenchimento rápido de nomes.</div>
-          </div>
-
-          <button id="btn-save-settings" class="btn-primary"
-            style="display: flex; align-items: center; padding: 12px 24px; gap: 8px;">
-            <i data-lucide="save"></i> Salvar Configurações
+          <button id="btn-refresh-pendentes" class="topbar-icon-btn" title="Atualizar lista" style="width:auto; padding:0 12px; gap:6px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/><path d="M14 2v4h-4M2 14v-4h4"/></svg>
+            Atualizar
           </button>
         </div>
 
-        <div class="panel">
-          <h3 style="font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Cache Local e Offline</h3>
-          <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">Se o sistema ficar offline, os testes
-            continuarão funcionando e serão processados localmente.</p>
-          <button id="btn-clear-cache" class="btn-danger"
-            style="display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 6px; cursor: pointer;">
-            <i data-lucide="trash-2"></i> Limpar Testes Pendentes/Locais
-          </button>
+        <!-- Resumo rápido -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:24px;">
+          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
+            <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:1px;">Total Efetivo</div>
+            <div id="pend-total" style="font-size:2rem; font-weight:800; color:var(--text-1); margin-top:4px;">—</div>
+          </div>
+          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
+            <div style="font-size:11px; font-weight:600; color:#16a34a; text-transform:uppercase; letter-spacing:1px;">Testados Hoje</div>
+            <div id="pend-testados" style="font-size:2rem; font-weight:800; color:#16a34a; margin-top:4px;">—</div>
+          </div>
+          <div style="background:#fff; border:1px solid #fca5a5; border-radius:8px; padding:16px; background:#fff5f5;">
+            <div style="font-size:11px; font-weight:600; color:#ef4444; text-transform:uppercase; letter-spacing:1px;">Pendentes</div>
+            <div id="pend-pendentes" style="font-size:2rem; font-weight:800; color:#ef4444; margin-top:4px;">—</div>
+          </div>
+        </div>
+
+        <!-- Lista de pendentes -->
+        <div style="background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+          <div style="padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:600; color:var(--text-2);">Lista de Colaboradores Pendentes</span>
+            <input type="text" id="pend-search" placeholder="Filtrar por nome..." style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; width:220px;" />
+          </div>
+          <div id="pendentes-loading" style="display:none; text-align:center; padding:2rem; color:var(--text-3);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px; height:32px; animation:spin 1s linear infinite; margin:0 auto 8px;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+            Carregando...
+          </div>
+          <div id="pendentes-list" style="max-height:calc(100vh - 340px); overflow-y:auto;">
+            <div style="text-align:center; padding:3rem; color:var(--text-3); font-size:14px;">
+              Clique em "Atualizar" para carregar os pendentes de hoje.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -543,10 +585,27 @@
 
   </div>
 
+  <!-- DEV MODE: bypass SSO automático em ambiente local (file:// / localhost).
+       SSO não consegue redirecionar de volta para file://, portanto o bypass
+       é ativado automaticamente. Em produção (https) esta lógica é ignorada. -->
+  <script>
+    (function () {
+      var isLocal = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (isLocal) {
+        window.SGE_SSO_BYPASS = true;
+        console.log('[SGE DEV] Bypass SSO ativado automaticamente — protocolo local detectado (' + location.protocol + ')');
+      }
+    })();
+  </script>
+
   <!-- SSO / Central SGE -->
   <script src="https://grupogps-mecanizada.github.io/SGE_GRUPOGPS/js/auth/sso_client.js?v=6"></script>
   <script src="https://grupogps-mecanizada.github.io/SGE-CENTRAL/js/sge-session-ping.js?v=1"></script>
   <script src="https://grupogps-mecanizada.github.io/SGE-CENTRAL/js/sge-ticket-widget.js?v=1"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
 
   <!-- JS Modules (order matters) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -564,7 +623,7 @@
   <script src="js/pesquisa.js"></script>
   <script src="js/relatorio.js"></script>
   <script src="js/dashboard.js"></script>
-  <script src="js/settings.js"></script>
+  <script src="js/pendentes.js"></script>
 
   <!-- Navigation and App init -->
   <script src="js/auth.js"></script>

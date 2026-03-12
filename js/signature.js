@@ -193,7 +193,6 @@ SGE_ETL.signature = {
         const dataUrl = this.canvas.toDataURL('image/jpeg', 0.5);
 
         const finalData = {
-            id: `ETL-${Date.now()}`,
             data_hora: new Date().toISOString(),
             operador: SGE_ETL.state.plantao.operador,
             numeroSerie: SGE_ETL.state.plantao.aparelho,
@@ -211,7 +210,7 @@ SGE_ETL.signature = {
             SGE_ETL.helpers.toast('Teste Registrado com Sucesso!', 'success');
             if (SGE_ETL.state.testes_diario) {
                 SGE_ETL.state.testes_diario.unshift({
-                    id: finalData.id,
+                    id: res.id,
                     data_hora: finalData.data_hora,
                     operador: finalData.operador,
                     aparelho: finalData.numeroSerie,

@@ -2,66 +2,117 @@
 
 window.SGE_ETL = window.SGE_ETL || {};
 
+/**
+ * SGE_ETL API
+ * Uses window.supabase (same pattern as Gestão Efetivo).
+ * Column names mirror the real DB schema:
+ *   efetivo_gps_mec_colaboradores → id, name, function, regime, matricula_gps, telefone, status
+ *   efetivo_gps_mec_etilometria   → id, data_hora, operador_nome, aparelho_serie, local_teste,
+ *                                    colaborador_id, colaborador_nome, colaborador_cpf_mat,
+ *                                    colaborador_funcao, resultado, status, observacoes, assinatura
+ */
 SGE_ETL.api = {
-    async doReq(url, method, params = null) {
-        if (!url || !navigator.onLine) {
-            return { success: false, error: 'Offline ou URL não configurada' };
-        }
+
+    async loadDiario() {
+        if (!window.supabase) return { success: false, error: 'Supabase não inicializado' };
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         try {
-            if (method === 'GET') {
-                const query = new URLSearchParams({
-                    action: params.action || '',
-                    ...params
-                }).toString();
-                const res = await fetch(`${url}?${query}`);
-                if (!res.ok) throw new Error('Erro na rede HTTP');
-                return await res.json();
-            } else {
-                // POST requests to Google Apps Script need no-cors and JSON.stringify
-                await fetch(url, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(params)
-                });
-                // Apps Script with no-cors doesn't return readable JSON. 
-                // We assume success if it didn't throw.
-                return { success: true };
-            }
+            const { data, error } = await window.supabase
+                .schema('gps_mec')
+                .from('efetivo_gps_mec_etilometria')
+                .select('*')
+                .gte('data_hora', today.toISOString())
+                .order('data_hora', { ascending: false });
+
+            if (error) throw error;
+
+            const mapped = data.map(d => ({
+                id: d.id,
+                data_hora: d.data_hora,
+                operador: d.operador_nome,
+                aparelho: d.aparelho_serie,
+                local: d.local_teste,
+                colaborador: d.colaborador_nome,
+                cpf_mat: d.colaborador_cpf_mat,
+                funcao: d.colaborador_funcao,
+                resultado: d.resultado,
+                status: d.status,
+                observacoes: d.observacoes,
+                assinatura: d.assinatura
+            }));
+
+            SGE_ETL.state.testes_diario = mapped;
+            return { success: true, data: mapped };
         } catch (e) {
-            console.error('API Error:', e);
+            console.error('API loadDiario Error:', e);
             return { success: false, error: e.message };
         }
     },
 
-    async loadDiario() {
-        const url = SGE_ETL.CONFIG.gasUrl;
-        const res = await this.doReq(url, 'GET', { action: 'listar_diario' });
-        if (res.success && res.data) {
-            SGE_ETL.state.testes_diario = res.data;
-        }
-        return res;
-    },
-
     async fetchColaboradores() {
-        const url = SGE_ETL.CONFIG.efetivoUrl;
-        if (!url) return { success: false, error: 'URL do Efetivo não configurada' };
-        return await this.doReq(url, 'GET', { action: 'listar_colaboradores' });
-    },
+        if (!window.supabase) return { success: false, error: 'Supabase não inicializado' };
 
-    async searchEtilometria(query) {
-        const url = SGE_ETL.CONFIG.gasUrl;
-        return await this.doReq(url, 'GET', { action: 'pesquisar_etilometria', query });
+        try {
+            // Real column names: name, function, regime, matricula_gps, status
+            const { data, error } = await window.supabase
+                .schema('gps_mec')
+                .from('efetivo_gps_mec_colaboradores')
+                .select('id, name, function, regime, matricula_gps, telefone, status')
+                .neq('status', 'DESLIGADO')
+                .order('name');
+
+            if (error) throw error;
+
+            // Normalize field names so the rest of the frontend can use .nome and .funcao
+            const normalized = data.map(c => ({
+                id: c.id,
+                nome: c.name,
+                funcao: c.function,
+                regime: c.regime,
+                matricula_gps: c.matricula_gps,
+                telefone: c.telefone,
+                status: c.status
+            }));
+
+            return { success: true, data: normalized };
+        } catch (e) {
+            console.error('API fetchColaboradores Error:', e);
+            return { success: false, error: e.message };
+        }
     },
 
     async salvarEtilometria(payload) {
-        const url = SGE_ETL.CONFIG.gasUrl;
-        const finalPayload = {
-            action: 'salvar_etilometria',
-            params: payload
-        };
-        // It's a fire and forget approach with no-cors
-        return await this.doReq(url, 'POST', finalPayload);
+        if (!window.supabase) return { success: false, error: 'Supabase não inicializado' };
+
+        try {
+            const { data, error } = await window.supabase
+                .schema('gps_mec')
+                .from('efetivo_gps_mec_etilometria')
+                .insert([{
+                    data_hora: payload.data_hora,
+                    operador_nome: payload.operador,
+                    aparelho_serie: payload.numeroSerie,
+                    local_teste: payload.local,
+                    colaborador_id: payload.colaborador_id || null,
+                    colaborador_nome: payload.nomeTestado,
+                    colaborador_cpf_mat: payload.cpfMatricula,
+                    colaborador_funcao: payload.postoFuncao,
+                    resultado: parseFloat(payload.resultado) || 0,
+                    status: payload.status,
+                    observacoes: payload.observacoes || null,
+                    assinatura: payload.assinatura || null
+                }])
+                .select('id')
+                .single();
+
+            if (error) throw error;
+            return { success: true, id: data.id };
+        } catch (e) {
+            console.error('API salvarEtilometria Error:', e);
+            return { success: false, error: e.message };
+        }
     }
 };
