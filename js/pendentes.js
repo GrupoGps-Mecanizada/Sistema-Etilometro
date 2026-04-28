@@ -36,7 +36,7 @@ SGE_ETL.pendentes = {
                 window.supabase
                     .schema('gps_mec')
                     .from('efetivo_gps_mec_colaboradores')
-                    .select('id, name, function, status, regime')
+                    .select('id, name, function, status, regime, category')
                     .neq('status', 'DESLIGADO')
                     .order('name'),
                 window.supabase
@@ -63,36 +63,69 @@ SGE_ETL.pendentes = {
             // Filter pendentes: no test today AND not on their day off
             const todayStr = new Date().toISOString().split('T')[0];
             
-            const pendentes = colaboradores.filter(c => {
-                if (this.testedIds.has(c.id)) return false;
-                if (testedNames.has((c.name || '').trim().toUpperCase())) return false;
+            // Render the off-duty shifts for today on the panel
+            const baseShifts = ['A', 'B', 'C', 'D', 'ADM'];
+            const shiftsOff = [];
+            baseShifts.forEach(shift => {
+                 const statusShift = window.SGE_ETL.helpers.calcularTurno(todayStr, shift);
+                 if (statusShift === 'F') shiftsOff.push(shift);
+            });
+            const folgasEl = document.getElementById('pend-folgas');
+            if (folgasEl) {
+                if (shiftsOff.length === 0) folgasEl.textContent = 'Nenhuma';
+                // Replace ADM with ADM directly, otherwise join letters
+                else folgasEl.textContent = shiftsOff.join(', ');
+            }
+
+            // Keep only OPERACIONAL staff
+            const operacionais = colaboradores.filter(c => c.category !== 'GESTAO');
+
+            let countTestados = 0;
+            let countFolgas = 0;
+            let countPendentes = 0;
+
+            // Compute correct status for all operational staff
+            const diario = operacionais.map(c => {
+                let statusDia = 'PENDENTE';
+                let turnoHover = c.regime || 'Sem Turma';
                 
-                // Exclude people whose regime says they are off today
-                // For this, we calculate dynamically via the helper using their regime string.
+                // 1. Check if on rest day
                 if (c.regime) {
-                    const turnoHoje = window.SGE_ETL.helpers.calcularTurno(todayStr, c.regime);
-                    if (turnoHoje === 'F') {
-                        return false;
+                    const statusShift = window.SGE_ETL.helpers.calcularTurno(todayStr, c.regime);
+                    if (statusShift === 'F') {
+                        statusDia = 'FOLGA';
                     }
-                } else {
-                    // Se a pessoa não tem regime preenchido (''), se não quiser cobrar ela, return false.
-                    // Senão, return true para cobrar sempre quem não tem escala.
                 }
 
-                return true;
+                // 2. Overwrite if actually tested (even if on their day off)
+                const cNameObj = (c.name || '').trim().toUpperCase();
+                if (this.testedIds.has(c.id) || testedNames.has(cNameObj)) {
+                    statusDia = 'REALIZADO';
+                }
+
+                // Tally stats
+                if (statusDia === 'REALIZADO') countTestados++;
+                else if (statusDia === 'FOLGA') countFolgas++;
+                else countPendentes++;
+
+                return {
+                    ...c,
+                    statusDia: statusDia,
+                    turnoNormalizado: turnoHover
+                };
             });
 
-            this.allColaboradores = pendentes;
+            this.allColaboradores = diario;
 
             // Update stats
-            const total = colaboradores.length;
-            const testados = total - pendentes.length;
+            const total = operacionais.length;
             if (totalEl) totalEl.textContent = total;
-            if (testadosEl) testadosEl.textContent = testados;
-            if (pendentesEl) pendentesEl.textContent = pendentes.length;
-            if (menuStat) menuStat.textContent = testados;
+            if (testadosEl) testadosEl.textContent = countTestados;
+            if (pendentesEl) pendentesEl.textContent = countPendentes;
+            if (menuStat) menuStat.textContent = countTestados;
 
-            this.render(pendentes);
+            // Trigger standard filter read to apply defaults
+            this.applyFilters();
         } catch (err) {
             console.error('Pendentes load error:', err);
             if (listEl) listEl.innerHTML = `<div style="padding:2rem;text-align:center;color:#ef4444;">Erro ao carregar: ${err.message}</div>`;
@@ -114,29 +147,62 @@ SGE_ETL.pendentes = {
             return;
         }
 
-        const rows = pendentes.map(c => `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+        const rows = pendentes.map(c => {
+            let badgeHtml = '';
+            let styleCard = '';
+            
+            if (c.statusDia === 'REALIZADO') {
+                badgeHtml = `<span style="background:#dcfce7; color:#166534; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid #86efac; white-space:nowrap;">REALIZADO</span>`;
+            } else if (c.statusDia === 'FOLGA') {
+                badgeHtml = `<span style="background:#f3f4f6; color:#4b5563; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid #d1d5db; white-space:nowrap;">FOLGA</span>`;
+                styleCard = `opacity:0.6;`;
+            } else {
+                badgeHtml = `<span style="background:#fff5f5; color:#ef4444; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid #fca5a5; white-space:nowrap;">PENDENTE</span>`;
+            }
+
+            return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); transition:background 0.15s; ${styleCard}" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
                 <div>
                     <div style="font-weight:600; font-size:14px; color:var(--text-1);">${c.name || '—'}</div>
-                    <div style="font-size:12px; color:var(--text-3); margin-top:2px;">${c.function || '—'} · ${c.status || '—'}</div>
+                    <div style="font-size:12px; color:var(--text-3); margin-top:2px;">${c.function || '—'} · Turma: ${c.turnoNormalizado}</div>
                 </div>
-                <span style="background:#fff5f5; color:#ef4444; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid #fca5a5; white-space:nowrap;">PENDENTE</span>
-            </div>
-        `).join('');
+                ${badgeHtml}
+            </div>`;
+        }).join('');
 
         listEl.innerHTML = rows;
     },
 
-    filter(term) {
-        if (!term) {
-            this.render(this.allColaboradores);
-            return;
-        }
-        const t = term.toLowerCase();
-        const filtered = this.allColaboradores.filter(c =>
-            (c.name || '').toLowerCase().includes(t) ||
-            (c.function || '').toLowerCase().includes(t)
-        );
+    applyFilters() {
+        if (!this.allColaboradores) return;
+
+        const term = (document.getElementById('pend-search')?.value || '').toLowerCase();
+        const statusF = document.getElementById('pend-filter-status')?.value || 'todos';
+        const turnoF = document.getElementById('pend-filter-turno')?.value || 'todos';
+
+        const filtered = this.allColaboradores.filter(c => {
+            // 1. Text Search
+            if (term) {
+                if (!(c.name || '').toLowerCase().includes(term) && 
+                    !(c.function || '').toLowerCase().includes(term)) {
+                    return false;
+                }
+            }
+            
+            // 2. Status Match
+            if (statusF !== 'todos' && c.statusDia !== statusF) {
+                return false;
+            }
+
+            // 3. Turno Match
+            if (turnoF !== 'todos') {
+                const trn = (c.turnoNormalizado || '').toUpperCase();
+                if (!trn.includes(turnoF)) return false;
+            }
+
+            return true;
+        });
+
         this.render(filtered);
     },
 
@@ -152,13 +218,33 @@ SGE_ETL.pendentes = {
         }
 
         const searchInput = document.getElementById('pend-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => this.filter(e.target.value));
-        }
+        if (searchInput) searchInput.addEventListener('input', () => this.applyFilters());
+
+        const selectStatus = document.getElementById('pend-filter-status');
+        if (selectStatus) selectStatus.addEventListener('change', () => this.applyFilters());
+
+        const selectTurno = document.getElementById('pend-filter-turno');
+        if (selectTurno) selectTurno.addEventListener('change', () => this.applyFilters());
     },
 
     copiarFaltantes() {
-        if (!this.allColaboradores || this.allColaboradores.length === 0) {
+        // Find visible missing employees directly from the underlying list representing current DOM state
+        // We simulate the filter state to grab the exact matching list to copy
+        const term = (document.getElementById('pend-search')?.value || '').toLowerCase();
+        const turnoF = document.getElementById('pend-filter-turno')?.value || 'todos';
+        
+        const pendentesObrigatorios = (this.allColaboradores || []).filter(c => {
+            // Only care about missing tests
+            if (c.statusDia !== 'PENDENTE') return false;
+            
+            // Reapply filters to copy only what is being searched 
+            if (term && !(c.name || '').toLowerCase().includes(term) && !(c.function || '').toLowerCase().includes(term)) return false;
+            if (turnoF !== 'todos' && !(c.turnoNormalizado || '').toUpperCase().includes(turnoF)) return false;
+            
+            return true;
+        });
+
+        if (pendentesObrigatorios.length === 0) {
             if (window.SGE_ETL.helpers && window.SGE_ETL.helpers.toast) {
                 window.SGE_ETL.helpers.toast("Nenhum colaborador pendente para copiar.", "warning");
             } else {
@@ -172,8 +258,8 @@ SGE_ETL.pendentes = {
         
         // Group by regime
         const porRegime = {};
-        this.allColaboradores.forEach(c => {
-            const r = c.regime || 'Sem Turma';
+        pendentesObrigatorios.forEach(c => {
+            const r = c.turnoNormalizado || 'Sem Turma';
             if (!porRegime[r]) porRegime[r] = [];
             porRegime[r].push(c);
         });

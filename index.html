@@ -61,17 +61,18 @@
 
 <body>
   <!-- ==================== LOGIN SCREEN ==================== -->
-  <div id="login-screen">
+  <div id="login-screen" class="hidden">
     <div class="login-box">
-      <!-- Use lucide auth icon or some icon as logo -->
-      <div style="text-align:center; margin-bottom: 24px;">
-        <i data-lucide="shield-check" style="width:64px; height:64px; color:#0f3868;"></i>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:30px; text-align:center;">
+        <span style="font-family:'Inter',sans-serif; font-size:14px; font-weight:500; letter-spacing:0.22em; text-transform:uppercase; color:#94a3b8;">GRUPO GPS</span>
+        <span style="font-family:'Inter',sans-serif; font-size:32px; font-weight:800; letter-spacing:-0.02em; color:#0f3868; line-height:1.2;">MECANIZADA</span>
+        <div style="width:32px; height:2px; background:#0f3868; border-radius:2px; opacity:0.25; margin-top:6px; margin-bottom:12px;"></div>
+        <span style="font-size:13px; font-weight:600; color:#475569; letter-spacing:0.05em; text-transform:uppercase;">ETILOMETRIA DIGITAL</span>
       </div>
-      <h2 class="login-title">Etilometria Digital</h2>
       <form id="login-form">
         <div class="login-input-group">
-          <label>Usuário</label>
-          <input type="text" id="login-user" required autocomplete="username" />
+          <label>E-mail</label>
+          <input type="email" id="login-user" required autocomplete="username" />
         </div>
         <div class="login-input-group">
           <label>Senha</label>
@@ -81,9 +82,7 @@
       </form>
       <div class="login-error" id="login-error"></div>
     </div>
-    <div class="login-footer">
-      Desenvolvido por Warlison Abreu
-    </div>
+    <div class="login-footer">Desenvolvido por Warlison Abreu</div>
   </div>
 
   <div id="app">
@@ -136,13 +135,6 @@
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-      </div>
-
-      <!-- CENTER: Logo compacto -->
-      <div class="logo" style="position:absolute; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; pointer-events:none;">
-        <span class="logo-gps">Grupo GPS · Mecanizada</span>
-        <div class="logo-divider"></div>
-        <span class="logo-gestao">CONTROLE DE ETILOMETRO</span>
       </div>
 
       <!-- Slide-in Nav Overlay -->
@@ -464,7 +456,7 @@
         <!-- Resumo rápido -->
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:24px;">
           <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
-            <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:1px;">Total Efetivo</div>
+            <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:1px;">Total Efetivo (Op)</div>
             <div id="pend-total" style="font-size:2rem; font-weight:800; color:var(--text-1); margin-top:4px;">—</div>
           </div>
           <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
@@ -475,13 +467,36 @@
             <div style="font-size:11px; font-weight:600; color:#ef4444; text-transform:uppercase; letter-spacing:1px;">Pendentes</div>
             <div id="pend-pendentes" style="font-size:2rem; font-weight:800; color:#ef4444; margin-top:4px;">—</div>
           </div>
+          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
+            <div style="font-size:11px; font-weight:600; color:#8b5cf6; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:4px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" stroke-linecap="round" stroke-linejoin="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+              Folgas de Hoje
+            </div>
+            <div id="pend-folgas" style="font-size:1.5rem; font-weight:800; color:#5b21b6; margin-top:4px; line-height: 1.2;">—</div>
+          </div>
         </div>
 
-        <!-- Lista de pendentes -->
+        <!-- Barra de Filtros Avançados -->
         <div style="background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
-          <div style="padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:13px; font-weight:600; color:var(--text-2);">Lista de Colaboradores Pendentes</span>
-            <input type="text" id="pend-search" placeholder="Filtrar por nome..." style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; width:220px;" />
+          <div style="padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:600; color:var(--text-1);">Filtros de Listagem</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="pend-filter-status" style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; outline:none;">
+                <option value="todos">Todos os Status</option>
+                <option value="PENDENTE" selected>Somente Pendentes</option>
+                <option value="REALIZADO">Realizados</option>
+                <option value="FOLGA">Em Folga</option>
+              </select>
+              <select id="pend-filter-turno" style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; outline:none;">
+                <option value="todos">Todos os Turnos</option>
+                <option value="A">Turma A</option>
+                <option value="B">Turma B</option>
+                <option value="C">Turma C</option>
+                <option value="D">Turma D</option>
+                <option value="ADM">Turma ADM</option>
+              </select>
+              <input type="text" id="pend-search" placeholder="Buscar por nome..." style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; width:220px;" />
+            </div>
           </div>
           <div id="pendentes-loading" style="display:none; text-align:center; padding:2rem; color:var(--text-3);">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px; height:32px; animation:spin 1s linear infinite; margin:0 auto 8px;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
