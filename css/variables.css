@@ -24,13 +24,11 @@
   --radius: 12px;
   --shadow: 0 2px 12px #0000000a;
   --shadow-lg: 0 6px 28px #00000010;
-}
 
-/* ===================== TOKENS ESTENDIDOS ===================== */
-:root {
+  /* ===================== TOKENS ESTENDIDOS ===================== */
   /* Status semântico */
   --success-text: #2e9e5a;
-  --danger-text:  #d64545;
+  --danger-text: #d64545;
   --warning-text: #e0872a;
 
   /* Slate scale */
