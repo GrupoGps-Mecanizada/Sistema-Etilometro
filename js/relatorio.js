@@ -162,6 +162,8 @@ SGE_ETL.relatorio = {
 
             const rows = (colabRes.data || []).map(c => {
                 const turno = c.regime ? SGE_ETL.helpers.calcularTurno(dateStr, c.regime) : null;
+                if (turno === '19') return null; // excluir turno noturno
+
                 const nomeMaius = (c.name || '').trim().toUpperCase();
                 let status, testInfo = null, ausInfo = null;
 
@@ -177,7 +179,7 @@ SGE_ETL.relatorio = {
                     status = 'PENDENTE';
                 }
                 return { c, turno, status, testInfo, ausInfo };
-            });
+            }).filter(Boolean);
 
             this._presencaData = rows;
             this._renderPresencaTable(rows);
@@ -201,10 +203,10 @@ SGE_ETL.relatorio = {
         rows.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
 
         const statusStyles = {
-            PRESENTE: { bg: '#f0fdf4', color: '#15803d', label: '✓ PRESENTE' },
-            PENDENTE: { bg: '#fffbeb', color: '#d97706', label: '⏳ PENDENTE' },
-            AUSENTE:  { bg: '#fef2f2', color: '#dc2626', label: '✕ AUSENTE' },
-            FOLGA:    { bg: '#f5f3ff', color: '#7c3aed', label: '— FOLGA' }
+            PRESENTE: { bg: '#f0fdf4', color: '#15803d', label: 'PRESENTE' },
+            PENDENTE: { bg: '#fffbeb', color: '#d97706', label: 'PENDENTE' },
+            AUSENTE:  { bg: '#fef2f2', color: '#dc2626', label: 'AUSENTE' },
+            FOLGA:    { bg: '#f5f3ff', color: '#7c3aed', label: 'FOLGA' }
         };
 
         const motivoMap = { FALTA: 'Falta', ATESTADO: 'Atestado', AFASTADO: 'Afastamento', SUBSTITUIDO: 'Substituído', TROCA_ESCALA: 'Troca de Escala', FERIAS: 'Férias', FOLGA: 'Folga Extra', OUTRO: 'Outro' };
