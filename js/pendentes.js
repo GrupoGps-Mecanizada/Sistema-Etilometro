@@ -226,9 +226,9 @@ SGE_ETL.pendentes = {
             const ti = c.testInfo;
             if (ti) {
                 const col = SGE_ETL.helpers.statusColor(ti.etl_status || ti.status);
-                bodyHTML = `<div class="chamada-teste-result">🧪 ${parseFloat(ti.resultado).toFixed(2)} mg/L — <strong style="color:${col};">${ti.etl_status || ti.status}</strong></div>`;
+                bodyHTML = `<div class="chamada-teste-result">${parseFloat(ti.resultado).toFixed(2)} mg/L — <strong style="color:${col};">${ti.etl_status || ti.status}</strong></div>`;
             } else {
-                bodyHTML = `<div class="chamada-teste-result">🧪 Teste registrado hoje</div>`;
+                bodyHTML = `<div class="chamada-teste-result">Teste registrado hoje</div>`;
             }
 
         } else if (status === 'FOLGA') {
@@ -287,7 +287,7 @@ SGE_ETL.pendentes = {
             html += `<div class="chamada-extras">${tags.map(t => `<span class="chamada-extra-tag">${t}</span>`).join('')}</div>`;
         }
         if (extras.observations) {
-            html += `<div class="chamada-obs-preview">💬 ${extras.observations}</div>`;
+            html += `<div class="chamada-obs-preview">${extras.observations}</div>`;
         }
         return html;
     },
