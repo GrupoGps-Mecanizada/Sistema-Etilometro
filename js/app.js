@@ -67,6 +67,7 @@ SGE_ETL.app = {
 
         // Initialize all modules
         SGE_ETL.navigation.init();
+        SGE_ETL.dashboard?.init?.();
         SGE_ETL.app.setupDrawer();
         SGE_ETL.app.setupModal();
         SGE_ETL.aplicacao.init();
