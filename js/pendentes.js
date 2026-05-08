@@ -116,6 +116,7 @@ SGE_ETL.pendentes = {
                     testInfo:    testInfo && testedById[c.id] ? testedById[c.id] : null
                 };
             });
+            this.allColaboradores = this.allColaboradores.filter(c => c.turnoHoje !== '19');
 
             this._updateStats(shiftsOff);
             this.render();
@@ -188,7 +189,7 @@ SGE_ETL.pendentes = {
 
         if (filtered.length === 0) {
             container.innerHTML = `<div style="text-align:center;padding:3rem;color:#94a3b8;font-size:14px;">
-                ${sFilt === 'PENDENTE' ? '✅ Todos os colaboradores escalados foram contabilizados!' : 'Nenhum colaborador encontrado com este filtro.'}
+                ${sFilt === 'PENDENTE' ? 'Todos os colaboradores escalados foram contabilizados.' : 'Nenhum colaborador encontrado com este filtro.'}
             </div>`;
             return;
         }
@@ -211,9 +212,9 @@ SGE_ETL.pendentes = {
     _renderCard(c) {
         const status  = this._getCardStatus(c);
         const record  = this.attendanceRecords[c.id];
-        const turnoLabel = c.turnoHoje === '07' ? '☀️ 07h–19h'
-                         : c.turnoHoje === '19' ? '🌙 19h–07h'
-                         : c.turnoHoje === 'ADM' ? '🏢 ADM' : `📅 ${c.turnoHoje}`;
+        const turnoLabel = c.turnoHoje === '07' ? '07h–19h'
+                         : c.turnoHoje === 'ADM' ? 'ADM'
+                         : c.turnoHoje ? c.turnoHoje : '—';
 
         let cardClass = 'chamada-card';
         let statusBadge = '';
@@ -221,7 +222,7 @@ SGE_ETL.pendentes = {
 
         if (status === 'PRESENTE') {
             cardClass += ' chamada-card--locked chamada-card--presente';
-            statusBadge = `<span class="chamada-badge" style="background:#dcfce7;color:#166534;border:1px solid #86efac;">✓ PRESENTE</span>`;
+            statusBadge = `<span class="chamada-badge" style="background:#dcfce7;color:#166534;border:1px solid #86efac;">PRESENTE</span>`;
             const ti = c.testInfo;
             if (ti) {
                 const col = SGE_ETL.helpers.statusColor(ti.etl_status || ti.status);
@@ -232,7 +233,7 @@ SGE_ETL.pendentes = {
 
         } else if (status === 'FOLGA') {
             cardClass += ' chamada-card--locked chamada-card--folga';
-            statusBadge = `<span class="chamada-badge" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">— FOLGA 4x4</span>`;
+            statusBadge = `<span class="chamada-badge" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">FOLGA 4x4</span>`;
 
         } else if (status === 'REGISTRADO') {
             const sc = SGE_ETL.chamadaModal.STATUS_CODES[record.status];
@@ -241,7 +242,7 @@ SGE_ETL.pendentes = {
 
         } else {
             cardClass += ' chamada-card--pendente';
-            statusBadge = `<span class="chamada-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">⏳ PENDENTE</span>`;
+            statusBadge = `<span class="chamada-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">PENDENTE</span>`;
             bodyHTML = this._renderStatusGrid(c, null);
         }
 
@@ -274,12 +275,12 @@ SGE_ETL.pendentes = {
     _renderExtras(extras) {
         if (!extras) return '';
         const tags = [];
-        if (extras.has_justification === true)        tags.push('✔ Justificativa');
-        if (extras.has_justification === false)       tags.push('✕ Sem Justificativa');
-        if (extras.replacement_employee_name)         tags.push('↔ ' + extras.replacement_employee_name);
-        if (extras.training_type)                     tags.push('📚 ' + extras.training_type);
-        if (extras.new_schedule)                      tags.push('🕐 ' + extras.new_schedule);
-        if (extras.scale_change_target)               tags.push('📊 Escala: ' + extras.scale_change_target);
+        if (extras.has_justification === true)        tags.push('Justificativa');
+        if (extras.has_justification === false)       tags.push('Sem Justificativa');
+        if (extras.replacement_employee_name)         tags.push('Substituto: ' + extras.replacement_employee_name);
+        if (extras.training_type)                     tags.push('Treino: ' + extras.training_type);
+        if (extras.new_schedule)                      tags.push('Horario: ' + extras.new_schedule);
+        if (extras.scale_change_target)               tags.push('Escala: ' + extras.scale_change_target);
 
         let html = '';
         if (tags.length) {
@@ -294,10 +295,10 @@ SGE_ETL.pendentes = {
     _renderSaveBtn() {
         const count = Object.keys(this.attendanceRecords).length;
         const states = {
-            idle:    { text: `💾 Salvar ${count} Registro${count !== 1 ? 's' : ''}`, disabled: count === 0 },
+            idle:    { text: `Salvar ${count} Registro${count !== 1 ? 's' : ''}`, disabled: count === 0 },
             saving:  { text: 'Salvando...', disabled: true },
-            success: { text: '✔ Salvo com Sucesso!', disabled: true },
-            error:   { text: '✕ Erro ao Salvar', disabled: true }
+            success: { text: 'Salvo com Sucesso', disabled: true },
+            error:   { text: 'Erro ao Salvar', disabled: true }
         };
         const s = states[this._saveState] || states.idle;
         return `<button class="chamada-save-btn ${this._saveState}" ${s.disabled ? 'disabled' : ''} onclick="SGE_ETL.pendentes.saveAll()">${s.text}</button>`;
