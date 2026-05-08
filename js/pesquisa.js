@@ -12,9 +12,11 @@ SGE_ETL.pesquisa = {
 
     cacheElements() {
         this.els = {
-            input: document.getElementById('search-input'),
-            loading: document.getElementById('search-loading'),
-            results: document.getElementById('search-results')
+            input:     document.getElementById('search-input'),
+            dateInput: document.getElementById('search-date'),
+            btnClear:  document.getElementById('btn-search-clear-date'),
+            loading:   document.getElementById('search-loading'),
+            results:   document.getElementById('search-results')
         };
     },
 
@@ -36,13 +38,26 @@ SGE_ETL.pesquisa = {
                 this.performSearch(val);
             }, 500);
         });
+
+        // Date change triggers re-search if there's already a query
+        this.els.dateInput?.addEventListener('change', () => {
+            const val = this.els.input?.value.trim() || '';
+            if (val.length >= 3) this.performSearch(val);
+        });
+
+        this.els.btnClear?.addEventListener('click', () => {
+            if (this.els.dateInput) this.els.dateInput.value = '';
+            const val = this.els.input?.value.trim() || '';
+            if (val.length >= 3) this.performSearch(val);
+        });
     },
 
     async performSearch(query) {
         this.els.results.innerHTML = '';
         this.els.loading.style.display = 'block';
 
-        const res = await SGE_ETL.api.searchEtilometria(query);
+        const dateStr = this.els.dateInput?.value || null;
+        const res = await SGE_ETL.api.searchEtilometria(query, dateStr);
 
         this.els.loading.style.display = 'none';
 

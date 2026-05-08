@@ -16,8 +16,10 @@ SGE_ETL.aplicacao = {
             queuePanel: document.getElementById('aplicacao-queue'),
 
             // Setup
-            inOperador: document.getElementById('setup-operador'),
-            inLocal: document.getElementById('setup-local'),
+            inOperador:    document.getElementById('setup-operador'),
+            inLocal:       document.getElementById('setup-local'),
+            inAparelho:    document.getElementById('setup-aparelho'),
+            inDataPlantao: document.getElementById('setup-data-plantao'),
             btnStart: document.getElementById('btn-start-session'),
 
             // Queue
@@ -43,7 +45,9 @@ SGE_ETL.aplicacao = {
         if (SGE_ETL.state.plantao.ativo) {
             this.els.setupPanel.classList.add('hidden');
             this.els.queuePanel.classList.remove('hidden');
-            this.els.sessionInfo.innerHTML = `<strong>${SGE_ETL.state.plantao.aparelho}</strong> • ${SGE_ETL.state.plantao.local}`;
+            const p = SGE_ETL.state.plantao;
+            const dataLabel = p.data_plantao ? ` • 📅 ${p.data_plantao.split('-').reverse().join('/')}` : '';
+            this.els.sessionInfo.innerHTML = `<strong>${p.aparelho || '—'}</strong> • ${p.local}${dataLabel}`;
             this.els.inNome.focus();
             setTimeout(() => {
                 if (SGE_ETL.signature) SGE_ETL.signature.resizeCanvas();
@@ -53,6 +57,10 @@ SGE_ETL.aplicacao = {
             this.els.queuePanel.classList.add('hidden');
             if (SGE_ETL.state.user && !this.els.inOperador.value) {
                 this.els.inOperador.value = SGE_ETL.state.user.nome;
+            }
+            // Default date to today
+            if (this.els.inDataPlantao && !this.els.inDataPlantao.value) {
+                this.els.inDataPlantao.value = new Date().toISOString().split('T')[0];
             }
         }
     },
@@ -91,8 +99,10 @@ SGE_ETL.aplicacao = {
         if (!this.els.view) return;
 
         this.els.btnStart.addEventListener('click', async () => {
-            const op = this.els.inOperador.value.trim();
+            const op  = this.els.inOperador.value.trim();
             const loc = this.els.inLocal.value.trim();
+            const apa = this.els.inAparelho?.value.trim() || '—';
+            const dat = this.els.inDataPlantao?.value || new Date().toISOString().split('T')[0];
 
             if (!op || !loc) {
                 SGE_ETL.helpers.toast('Preencha Operador e Local', 'error');
@@ -117,7 +127,7 @@ SGE_ETL.aplicacao = {
                 if (window.lucide) window.lucide.createIcons();
             }
 
-            SGE_ETL.state.plantao = { ativo: true, operador: op, aparelho: '—', local: loc };
+            SGE_ETL.state.plantao = { ativo: true, operador: op, aparelho: apa, local: loc, data_plantao: dat };
             this.render();
             SGE_ETL.helpers.toast('Plantão Iniciado');
         });

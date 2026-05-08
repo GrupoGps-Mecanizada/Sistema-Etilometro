@@ -34,6 +34,8 @@
 
   <!-- Etilometria specifics -->
   <link rel="stylesheet" href="css/forms.css" />
+  <!-- Lista de Chamada -->
+  <link rel="stylesheet" href="css/chamada.css" />
 
   <!-- Icons (Lucide) -->
   <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
@@ -225,10 +227,23 @@
           </div>
 
 
-          <div class="form-field" style="margin-bottom: 24px;">
+          <div class="form-field" style="margin-bottom: 16px;">
             <label>Local do Teste *</label>
             <input type="text" id="setup-local" placeholder="Ex: Portaria Principal"
               style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+          </div>
+
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label>Nº de Série do Aparelho</label>
+            <input type="text" id="setup-aparelho" placeholder="Ex: AL9010-12345"
+              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+          </div>
+
+          <div class="form-field" style="margin-bottom: 24px;">
+            <label>Data do Plantão *</label>
+            <input type="date" id="setup-data-plantao"
+              style="background: #f9f9fb; border: 1px solid #d1d5db;" />
+            <span style="font-size:11px; color:#94a3b8; margin-top:4px;">Padrão: hoje. Altere apenas para registros retroativos.</span>
           </div>
 
           <button id="btn-start-session" class="btn-primary"
@@ -326,8 +341,13 @@
 
       <!-- PESQUISA VIEW -->
       <div id="pesquisa-view" class="view" style="padding: 24px; overflow-y: auto;">
-        <div id="search-bar">
-          <input type="text" id="search-input" placeholder="Pesquisar por nome do colaborador ou matrícula..." />
+        <div id="search-bar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+          <input type="text" id="search-input" placeholder="Pesquisar por nome ou matrícula..." style="flex:1; min-width:200px;" />
+          <input type="date" id="search-date" title="Filtrar por data" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px;" />
+          <button id="btn-search-clear-date"
+            style="padding:8px 12px; background:#f1f5f9; border:1px solid var(--border); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:#475569; white-space:nowrap;">
+            Limpar Data
+          </button>
         </div>
         <div id="search-loading" style="display:none; text-align:center; padding: 2rem; color: var(--slate-500);">
           <i data-lucide="loader" class="rotating" style="margin: 0 auto 1rem auto;"></i>
@@ -345,50 +365,88 @@
 
       <!-- RELATÓRIO VIEW -->
       <div id="relatorio-view" class="view" style="padding: 24px; overflow-y: auto;">
-        <div class="history-filters" style="display:flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
-          <input type="date" class="history-filter-input" id="filter-date"
-            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;" />
-          <input type="text" class="history-filter-input" id="filter-name" placeholder="Filtrar colaborador..."
-            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 200px;" />
-          <select class="history-filter-input" id="filter-status"
-            style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-            <option value="">Status (Todos)</option>
-            <option value="NEGATIVO">Negativo</option>
-            <option value="ATENÇÃO">Atenção</option>
-            <option value="POSITIVO">Positivo</option>
-          </select>
-          <button id="export-btn" class="btn btn-secondary" style="background:#fff; border: 1px solid var(--border);">
-            <i data-lucide="download"></i> Exportar CSV
+
+        <!-- Tabs -->
+        <div style="display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid var(--border);">
+          <button id="tab-testes" onclick="SGE_ETL.relatorio.switchTab('testes')"
+            style="padding:10px 20px; font-size:13px; font-weight:700; border:none; background:none; cursor:pointer; color:#0f3868; border-bottom:2px solid #0f3868; margin-bottom:-2px;">
+            🧪 Testes Realizados
+          </button>
+          <button id="tab-presenca" onclick="SGE_ETL.relatorio.switchTab('presenca')"
+            style="padding:10px 20px; font-size:13px; font-weight:600; border:none; background:none; cursor:pointer; color:#64748b; border-bottom:2px solid transparent; margin-bottom:-2px;">
+            📋 Presença / Faltas
           </button>
         </div>
 
-        <div id="history-table-wrap"
-          style="background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: auto; max-height: calc(100vh - 200px);">
-          <table id="history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-            <thead style="background: var(--slate-50); position: sticky; top: 0; z-index: 10;">
-              <tr>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Data/Hora</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Colaborador</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  CPF/Mat</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Aparelho</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Resultado</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Status</th>
-                <th style="padding: 12px 16px; border-bottom: 1px solid var(--slate-200); color: var(--slate-600);">
-                  Operador</th>
-              </tr>
-            </thead>
-            <tbody id="history-tbody">
-              <!-- Rendered via JS -->
-            </tbody>
-          </table>
-          <div id="history-empty" style="display:none; text-align:center; padding: 24px; color: var(--slate-500);">
-            Nenhum teste encontrado para os filtros selecionados.</div>
+        <!-- PAINEL: Testes -->
+        <div id="painel-testes">
+          <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <input type="date" id="filter-date" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;" />
+            <button id="btn-load-testes"
+              style="padding:8px 16px; background:#0f3868; color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;">
+              Carregar
+            </button>
+            <input type="text" id="filter-name" placeholder="Filtrar colaborador..." style="padding:8px 12px; border:1px solid var(--border); border-radius:6px; flex:1; min-width:180px;" />
+            <select id="filter-status" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;">
+              <option value="">Status (Todos)</option>
+              <option value="NEGATIVO">Negativo</option>
+              <option value="ATENÇÃO">Atenção</option>
+              <option value="POSITIVO">Positivo</option>
+            </select>
+            <button id="export-btn" style="padding:8px 14px; background:#fff; border:1px solid var(--border); border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; margin-left:auto;">
+              <i data-lucide="download"></i> Exportar CSV
+            </button>
+          </div>
+          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; overflow:auto; max-height:calc(100vh - 260px);">
+            <table id="history-table" style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
+              <thead style="background:var(--slate-50); position:sticky; top:0; z-index:10;">
+                <tr>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Data/Hora</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Colaborador</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">CPF/Mat</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Aparelho</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Resultado</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Status</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Operador</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody"></tbody>
+            </table>
+            <div id="history-empty" style="display:none; text-align:center; padding:24px; color:var(--slate-500);">Nenhum teste encontrado.</div>
+          </div>
+        </div>
+
+        <!-- PAINEL: Presença/Faltas -->
+        <div id="painel-presenca" style="display:none;">
+          <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <input type="date" id="presenca-date" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;" />
+            <button id="btn-load-presenca"
+              style="padding:8px 16px; background:#0f3868; color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer;">
+              Carregar
+            </button>
+            <button id="btn-export-presenca"
+              style="padding:8px 14px; background:#fff; border:1px solid var(--border); border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; margin-left:auto;">
+              <i data-lucide="download"></i> Exportar CSV Presença
+            </button>
+          </div>
+          <div id="presenca-loading" style="display:none; text-align:center; padding:2rem; color:var(--text-3);">Carregando...</div>
+          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; overflow:auto; max-height:calc(100vh - 260px);">
+            <table id="presenca-table" style="width:100%; border-collapse:collapse; text-align:left; font-size:14px;">
+              <thead style="background:var(--slate-50); position:sticky; top:0; z-index:10;">
+                <tr>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Colaborador</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Função</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Turma</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Turno</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Presença</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Resultado</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--slate-200); color:var(--slate-600);">Motivo / Obs.</th>
+                </tr>
+              </thead>
+              <tbody id="presenca-tbody"></tbody>
+            </table>
+            <div id="presenca-empty" style="display:none; text-align:center; padding:24px; color:var(--slate-500);">Selecione uma data e clique em Carregar.</div>
+          </div>
         </div>
       </div>
 
@@ -434,80 +492,94 @@
         </div>
       </div>
 
-      <!-- PENDENTES VIEW -->
-      <div id="pendentes-view" class="view" style="padding: 24px; overflow-y: auto;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+      <!-- LISTA DE CHAMADA VIEW -->
+      <div id="pendentes-view" class="view" style="padding:20px; overflow-y:auto;">
+
+        <!-- Cabeçalho -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
           <div>
-            <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-1); margin:0;">Pendências do Dia</h2>
-            <p style="font-size:13px; color:var(--text-2); margin:4px 0 0;">Colaboradores que ainda não realizaram o teste de etilometria hoje.</p>
+            <h2 style="font-size:1.15rem; font-weight:800; color:#0f172a; margin:0;">Lista de Chamada</h2>
+            <p style="font-size:12px; color:#64748b; margin:3px 0 0;">🧪 Assinatura do teste = PRESENTE automático &nbsp;|&nbsp; Marque o status dos demais</p>
           </div>
           <div style="display:flex; gap:8px;">
-            <button id="btn-copiar-pendentes" class="btn btn-secondary" title="Copiar Lista para WhatsApp" style="background:#fff; border:1px solid var(--border); border-radius:6px; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer;">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              Copiar Faltantes
+            <button id="btn-copiar-pendentes" title="Copiar Pendentes"
+              style="background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:0 12px; height:34px; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; cursor:pointer; color:#475569;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copiar Pendentes
             </button>
-            <button id="btn-refresh-pendentes" class="topbar-icon-btn" title="Atualizar lista" style="width:auto; padding:0 12px; gap:6px;">
-              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/><path d="M14 2v4h-4M2 14v-4h4"/></svg>
+            <button id="btn-refresh-pendentes"
+              style="background:#0f3868; color:#fff; border:none; border-radius:6px; padding:0 14px; height:34px; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; cursor:pointer;">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.47-2.4M14 8A6 6 0 012.53 10.4"/><path d="M14 2v4h-4M2 14v-4h4"/></svg>
               Atualizar
             </button>
           </div>
         </div>
 
-        <!-- Resumo rápido -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:24px;">
-          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
-            <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:1px;">Total Efetivo (Op)</div>
-            <div id="pend-total" style="font-size:2rem; font-weight:800; color:var(--text-1); margin-top:4px;">—</div>
+        <!-- KPI Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px;">
+          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 12px;">
+            <div style="font-size:9px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Escalados</div>
+            <div id="pend-total" style="font-size:1.9rem; font-weight:800; color:#0f172a; margin-top:4px; line-height:1;">—</div>
           </div>
-          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
-            <div style="font-size:11px; font-weight:600; color:#16a34a; text-transform:uppercase; letter-spacing:1px;">Testados Hoje</div>
-            <div id="pend-testados" style="font-size:2rem; font-weight:800; color:#16a34a; margin-top:4px;">—</div>
+          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:14px 12px;">
+            <div style="font-size:9px; font-weight:700; color:#16a34a; text-transform:uppercase; letter-spacing:1px;">✓ Presentes</div>
+            <div id="pend-testados" style="font-size:1.9rem; font-weight:800; color:#15803d; margin-top:4px; line-height:1;">—</div>
           </div>
-          <div style="background:#fff; border:1px solid #fca5a5; border-radius:8px; padding:16px; background:#fff5f5;">
-            <div style="font-size:11px; font-weight:600; color:#ef4444; text-transform:uppercase; letter-spacing:1px;">Pendentes</div>
-            <div id="pend-pendentes" style="font-size:2rem; font-weight:800; color:#ef4444; margin-top:4px;">—</div>
+          <div style="background:#fff5f5; border:1px solid #fca5a5; border-radius:10px; padding:14px 12px;">
+            <div style="font-size:9px; font-weight:700; color:#ef4444; text-transform:uppercase; letter-spacing:1px;">⏳ Pendentes</div>
+            <div id="pend-pendentes" style="font-size:1.9rem; font-weight:800; color:#dc2626; margin-top:4px; line-height:1;">—</div>
           </div>
-          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px;">
-            <div style="font-size:11px; font-weight:600; color:#8b5cf6; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:4px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" stroke-linecap="round" stroke-linejoin="round"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-              Folgas de Hoje
-            </div>
-            <div id="pend-folgas" style="font-size:1.5rem; font-weight:800; color:#5b21b6; margin-top:4px; line-height: 1.2;">—</div>
+          <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px 12px;">
+            <div style="font-size:9px; font-weight:700; color:#d97706; text-transform:uppercase; letter-spacing:1px;">📋 Registrados</div>
+            <div id="pend-ausentes" style="font-size:1.9rem; font-weight:800; color:#b45309; margin-top:4px; line-height:1;">—</div>
+          </div>
+          <div style="background:#f5f3ff; border:1px solid #c4b5fd; border-radius:10px; padding:14px 12px;">
+            <div style="font-size:9px; font-weight:700; color:#7c3aed; text-transform:uppercase; letter-spacing:1px;">— Folgas</div>
+            <div id="pend-folgas" style="font-size:1.4rem; font-weight:800; color:#5b21b6; margin-top:4px; line-height:1.2;">—</div>
           </div>
         </div>
 
-        <!-- Barra de Filtros Avançados -->
-        <div style="background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
-          <div style="padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
-            <span style="font-size:13px; font-weight:600; color:var(--text-1);">Filtros de Listagem</span>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <select id="pend-filter-status" style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; outline:none;">
-                <option value="todos">Todos os Status</option>
-                <option value="PENDENTE" selected>Somente Pendentes</option>
-                <option value="REALIZADO">Realizados</option>
-                <option value="FOLGA">Em Folga</option>
-              </select>
-              <select id="pend-filter-turno" style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; outline:none;">
-                <option value="todos">Todos os Turnos</option>
-                <option value="A">Turma A</option>
-                <option value="B">Turma B</option>
-                <option value="C">Turma C</option>
-                <option value="D">Turma D</option>
-                <option value="ADM">Turma ADM</option>
-              </select>
-              <input type="text" id="pend-search" placeholder="Buscar por nome..." style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; width:220px;" />
-            </div>
+        <!-- Progress bar -->
+        <div class="chamada-progress" style="margin-bottom:14px;">
+          <div class="chamada-progress-header">
+            <span>Progresso do Plantão</span>
+            <span id="chamada-progress-txt">—</span>
           </div>
-          <div id="pendentes-loading" style="display:none; text-align:center; padding:2rem; color:var(--text-3);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px; height:32px; animation:spin 1s linear infinite; margin:0 auto 8px;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
-            Carregando...
-          </div>
-          <div id="pendentes-list" style="max-height:calc(100vh - 340px); overflow-y:auto;">
-            <div style="text-align:center; padding:3rem; color:var(--text-3); font-size:14px;">
-              Clique em "Atualizar" para carregar os pendentes de hoje.
-            </div>
+          <div class="chamada-progress-track">
+            <div class="chamada-progress-bar" id="chamada-progress-bar" style="width:0%"></div>
           </div>
         </div>
+
+        <!-- Filtros -->
+        <div class="chamada-controls">
+          <input type="text" id="pend-search" class="chamada-search" placeholder="🔍 Buscar colaborador..." />
+          <select id="pend-filter-status" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:20px; font-size:12px; outline:none; background:#f8fafc;">
+            <option value="todos">Todos</option>
+            <option value="PENDENTE">⏳ Pendentes</option>
+            <option value="PRESENTE">✓ Presentes</option>
+            <option value="REGISTRADO">📋 Registrados</option>
+            <option value="FOLGA">— Folgas</option>
+          </select>
+          <select id="pend-filter-turno" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:20px; font-size:12px; outline:none; background:#f8fafc;">
+            <option value="todos">Todas as Turmas</option>
+            <option value="A">Turma A</option>
+            <option value="B">Turma B</option>
+            <option value="C">Turma C</option>
+            <option value="D">Turma D</option>
+            <option value="ADM">ADM</option>
+          </select>
+        </div>
+
+        <!-- Cards Grid + Save Footer (rendered by JS) -->
+        <div id="chamada-content">
+          <div style="text-align:center; padding:3rem; color:#94a3b8; font-size:14px;">
+            Clique em <strong>Atualizar</strong> para carregar a lista de chamada de hoje.
+          </div>
+        </div>
+
+        <!-- Modal de status (overlay) -->
+        <div id="chamada-modal-overlay"></div>
+
       </div>
 
     </div>
@@ -556,6 +628,7 @@
 
     <!-- ==================== TOAST ==================== -->
     <div id="toast-container"></div>
+
   </div>
 
   <!-- ==================== SIGNATURE OVERLAY ==================== -->
@@ -644,6 +717,7 @@
   <script src="js/pesquisa.js"></script>
   <script src="js/relatorio.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/chamada-modal.js"></script>
   <script src="js/pendentes.js"></script>
 
   <!-- Navigation and App init -->

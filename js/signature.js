@@ -192,8 +192,15 @@ SGE_ETL.signature = {
 
         const dataUrl = this.canvas.toDataURL('image/jpeg', 0.5);
 
+        // Use session date but keep current clock time
+        const plantaoDate = SGE_ETL.state.plantao?.data_plantao;
+        const now = new Date();
+        const data_hora = plantaoDate
+            ? `${plantaoDate}T${now.toISOString().split('T')[1]}`
+            : now.toISOString();
+
         const finalData = {
-            data_hora: new Date().toISOString(),
+            data_hora,
             operador: SGE_ETL.state.plantao.operador,
             numeroSerie: SGE_ETL.state.plantao.aparelho,
             local: SGE_ETL.state.plantao.local,
