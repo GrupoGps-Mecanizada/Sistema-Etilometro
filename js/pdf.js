@@ -59,10 +59,10 @@ SGE_ETL.pdf = {
             body: rows,
             margin: { left: margin, right: margin },
             columnStyles: {
-                0: { cellWidth: 65 },
-                1: { cellWidth: 33 },
-                2: { cellWidth: 24 },
-                3: { cellWidth: 20 },
+                0: { cellWidth: 58 },
+                1: { cellWidth: 32 },
+                2: { cellWidth: 22 },
+                3: { cellWidth: 26 },
                 4: { cellWidth: 44 }
             },
             styles: {
