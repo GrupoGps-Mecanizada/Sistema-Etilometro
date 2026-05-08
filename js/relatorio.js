@@ -44,6 +44,20 @@ SGE_ETL.relatorio = {
         this.els.btnExport?.addEventListener('click', () => this.exportCSVTestes());
         this.els.btnLoadPres?.addEventListener('click', () => this.loadPresenca());
         this.els.btnExportPres?.addEventListener('click', () => this.exportCSVPresenca());
+        document.getElementById('export-pdf-btn')?.addEventListener('click', () => {
+            const testes = SGE_ETL.state.testes_diario;
+            if (!testes || !testes.length) {
+                SGE_ETL.helpers.toast('Carregue os dados antes de exportar o PDF', 'error');
+                return;
+            }
+            const meta = {
+                data:      this.els.fDate?.value || '',
+                operador:  testes[0]?.operador  || '—',
+                local:     testes[0]?.local     || '—',
+                aparelho:  testes[0]?.aparelho  || '—'
+            };
+            SGE_ETL.pdf.exportarListaComAssinaturas(testes, meta);
+        });
     },
 
     switchTab(tab) {
