@@ -394,6 +394,21 @@ SGE_ETL.pendentes = {
             .catch(() => SGE_ETL.helpers.toast('Erro ao copiar', 'error'));
     },
 
+    exportarRelatorio() {
+        if (!this.allColaboradores.length) {
+            SGE_ETL.helpers.toast('Carregue a lista antes de exportar', 'error');
+            return;
+        }
+        const todayStr = (SGE_ETL.state.plantao?.ativo && SGE_ETL.state.plantao?.data_plantao)
+            ? SGE_ETL.state.plantao.data_plantao
+            : new Date().toISOString().split('T')[0];
+        const meta = {
+            data:     todayStr,
+            operador: SGE_ETL.state.plantao?.operador || SGE_ETL.state.user?.nome || '—'
+        };
+        SGE_ETL.pdf.exportarRelatorioJustificativas(this.allColaboradores, this.attendanceRecords, meta);
+    },
+
     // ─── INIT ────────────────────────────────────────────────────────────────
 
     init() {
@@ -402,6 +417,7 @@ SGE_ETL.pendentes = {
             this.load();
         });
         document.getElementById('btn-copiar-pendentes')?.addEventListener('click', () => this.copiarFaltantes());
+        document.getElementById('btn-exportar-relatorio')?.addEventListener('click', () => this.exportarRelatorio());
 
         document.getElementById('pend-search')?.addEventListener('input', e => {
             this._filterSearch = e.target.value;

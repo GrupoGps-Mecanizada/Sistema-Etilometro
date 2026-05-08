@@ -225,3 +225,294 @@
 .chamada-save-btn.error {
   background: var(--danger-text);
 }
+
+/* ===================== CHAMADA MODAL ===================== */
+
+#chamada-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#chamada-modal-overlay.active {
+  display: flex;
+}
+
+.chamada-modal {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.chamada-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chamada-modal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chamada-modal-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.chamada-modal-emp {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.chamada-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chamada-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chamada-modal-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.chamada-modal-textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--text-1);
+  background: var(--slate-50);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.chamada-modal-textarea:focus {
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+.chamada-modal-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--text-1);
+  background: var(--slate-50);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.chamada-modal-input:focus {
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+.chamada-modal-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--text-1);
+  background: var(--slate-50);
+  outline: none;
+  cursor: pointer;
+}
+
+.chamada-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.chamada-modal-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: opacity 0.15s;
+}
+
+.chamada-modal-btn:hover {
+  opacity: 0.88;
+}
+
+.chamada-modal-btn-cancel {
+  background: var(--slate-100);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+
+.chamada-modal-btn-confirm {
+  color: #ffffff;
+}
+
+/* ── Toggle Sim / Não ── */
+
+.chamada-toggle-group {
+  display: flex;
+  gap: 8px;
+}
+
+.chamada-toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--slate-50);
+  color: var(--text-2);
+  font-family: var(--font-display);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.chamada-toggle-btn:hover {
+  background: var(--slate-100);
+  border-color: var(--slate-300);
+}
+
+.chamada-toggle-btn.selected-yes {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.chamada-toggle-btn.selected-no {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+/* ── Autocomplete ── */
+
+.chamada-autocomplete-wrapper {
+  position: relative;
+}
+
+.chamada-autocomplete-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 10001;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.chamada-autocomplete-dropdown.visible {
+  display: block;
+}
+
+.chamada-autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-1);
+  border-bottom: 1px solid var(--slate-100);
+  transition: background 0.1s;
+}
+
+.chamada-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.chamada-autocomplete-item:hover {
+  background: var(--slate-50);
+}
+
+.chamada-autocomplete-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.autocomplete-match {
+  background: #fef08a;
+  border-radius: 2px;
+}
+
+.autocomplete-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ── Chip de colaborador selecionado ── */
+
+.chamada-selected-emp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
+}
+
+.chamada-selected-remove {
+  margin-left: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.chamada-selected-remove:hover {
+  color: #b91c1c;
+}
