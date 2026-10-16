@@ -16,10 +16,15 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 SGE_ETL.SUPABASE_URL = SUPABASE_URL;
 SGE_ETL.SUPABASE_KEY = SUPABASE_KEY;
 
+// Uma conexão só, a mesma do login da Central (SGE.cliente do sge-core): o sistema
+// lê e grava com a sessão de quem entrou, e não como anônimo.
+// window.supabase vira a conexão; o createClient fica nela porque o sge-core o procura ali.
 if (typeof supabase !== 'undefined' && supabase.createClient) {
-    // Overwrite window.supabase with the initialized client (same pattern as Gestão Efetivo)
-    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.info('SGE_ETL: Supabase client initialized.');
+    const lib = window.supabase;
+    const core = window.SGECore;
+    const db = core && core.cliente ? core.cliente(SUPABASE_URL, SUPABASE_KEY) : lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+    db.createClient = lib.createClient;
+    window.supabase = db;
 } else {
     console.warn('SGE_ETL: Supabase CDN script not loaded.');
 }

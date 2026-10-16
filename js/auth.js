@@ -1,153 +1,38 @@
 'use strict';
 
 /**
- * SGE_ETL — Authentication Module
- * Mirrors Gestão Efetivo: SSO first, then Supabase local session fallback.
- * Uses window.supabase (not window.supabaseClient).
+ * SGE_ETL — Login (via SGE.acesso do sge-core)
+ * Usa a sessão real do login da Central (Supabase Auth). Sem sessão, vai para o login da Central.
+ * Na dúvida (erro, rede), não entra.
  */
 window.SGE_ETL = window.SGE_ETL || {};
 
-const ssoClient = window.SgeAuthSDK ? new window.SgeAuthSDK('etilometro_mec') : null;
+const SLUG_SISTEMA = 'etilometro_mec';
+
+// Régua única → nomes antigos (ver "Régua única de acesso - especificação" no cofre).
+const PERFIL_POR_PAPEL = { ADMIN: 'ADM', GESTOR: 'GESTAO' };
 
 SGE_ETL.auth = {
     currentUser: null,
 
     async init() {
-        // 1. Try SSO authentication
-        if (ssoClient) {
-            const userData = await ssoClient.checkAuth();
-
-            if (userData) {
-                console.log('[SGE_ETL AUTH] Autenticado via SSO:', userData.nome);
-                this.updateCurrentUser(userData);
-                let token = null;
-                try {
-                    const { data: { session } } = await window.supabase.auth.getSession();
-                    token = session?.access_token || null;
-                } catch (e) {}
-                await this.registerSession(userData.id, token);
-                return true;
-            }
-
-            if (ssoClient.isBypass()) {
-                // 2. Bypass active — try existing Supabase session
-                console.log('[SGE_ETL AUTH] BYPASS ativo — verificando sessão Supabase local...');
-                try {
-                    if (window.supabase) {
-                        const { data: { session } } = await window.supabase.auth.getSession();
-                        if (session && session.user) {
-                            console.log('[SGE_ETL AUTH] Sessão local encontrada:', session.user.email);
-                            this.updateCurrentUser({
-                                id: session.user.id,
-                                email: session.user.email,
-                                nome: session.user.user_metadata?.nome || session.user.email.split('@')[0],
-                                perfil: session.user.user_metadata?.perfil || 'GESTAO'
-                            });
-                            await this.registerSession(session.user.id, session.access_token);
-                            return true;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[SGE_ETL AUTH] Erro ao verificar sessão:', e);
-                }
-
-                // No session — show login screen
-                console.log('[SGE_ETL AUTH] Sem sessão — exibindo login local');
-                return false;
-            }
-
-            // SSO active but no token — SSO client will redirect
-            return false;
+        const core = window.SGECore;
+        if (!core || !core.acesso) {
+            // Sem o sge-core (falha ao baixar) não dá para conferir o login: não entra.
+            const status = document.getElementById('loading-status');
+            if (status) status.textContent = 'Não consegui carregar o login. Confira a internet e recarregue a página.';
+            await new Promise(() => {});
         }
 
-        // 3. No SSO client — fallback to pure local Supabase auth
-        console.warn('[SGE_ETL AUTH] SSO Client não encontrado. Usando fallback Supabase local.');
-        try {
-            if (window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session && session.user) {
-                    this.updateCurrentUser({
-                        id: session.user.id,
-                        email: session.user.email,
-                        nome: session.user.user_metadata?.nome || session.user.email.split('@')[0],
-                        perfil: session.user.user_metadata?.perfil || 'GESTAO'
-                    });
-                    return true;
-                }
-            }
-        } catch (e) {}
-        return false;
-    },
-
-    async registerSession(userId, accessToken) {
-        try {
-            const existingId = localStorage.getItem('sge_session_id');
-            if (existingId) return;
-
-            if (!accessToken && window.supabase) {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                accessToken = session?.access_token || null;
-            }
-            if (!accessToken) {
-                console.warn('[SGE_ETL AUTH] Sem token — sessão não será registrada (RLS bloqueia anon)');
-                return;
-            }
-
-            const SUPABASE_URL = SGE_ETL.SUPABASE_URL;
-            const ANON_KEY = SGE_ETL.SUPABASE_KEY;
-
-            const sysResp = await fetch(
-                `${SUPABASE_URL}/rest/v1/sge_central_sistemas?slug=eq.etilometro_mec&select=id`,
-                {
-                    headers: {
-                        'apikey': ANON_KEY,
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Accept-Profile': 'gps_compartilhado',
-                        'Accept': 'application/vnd.pgrst.object+json'
-                    }
-                }
-            );
-
-            if (!sysResp.ok) return;
-            const sysData = await sysResp.json();
-            if (!sysData || !sysData.id) return;
-
-            const sessResp = await fetch(`${SUPABASE_URL}/rest/v1/sge_central_sessoes`, {
-                method: 'POST',
-                headers: {
-                    'apikey': ANON_KEY,
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'Content-Profile': 'gps_compartilhado',
-                    'Accept-Profile': 'gps_compartilhado',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify({
-                    usuario_id: userId,
-                    sistema_id: sysData.id,
-                    ip_address: '0.0.0.0',
-                    user_agent: navigator.userAgent.substring(0, 200),
-                    expira_em: new Date(Date.now() + (1000 * 60 * 60 * 8)).toISOString()
-                })
-            });
-
-            if (sessResp.ok) {
-                const sessData = await sessResp.json();
-                const sessionId = Array.isArray(sessData) ? sessData[0]?.id : sessData?.id;
-                if (sessionId) {
-                    localStorage.setItem('sge_session_id', sessionId);
-                    localStorage.setItem('sge_session_user_id', userId);
-                    localStorage.setItem('sge_session_token', accessToken);
-                    localStorage.setItem('sge_session_user_name', this.currentUser?.nome || 'Usuário');
-                    localStorage.setItem('sge_session_user_email', this.currentUser?.email || '');
-                    localStorage.setItem('sge_session_app_slug', 'etilometro_mec');
-                    localStorage.setItem('sge_session_app_name', 'Etilometria Digital');
-                    if (window.SGE_SESSION_PING) window.SGE_SESSION_PING.start();
-                }
-            }
-        } catch (err) {
-            console.warn('[SGE_ETL AUTH] registerSession falhou:', err);
-        }
+        // Só continua se a pessoa estiver logada e tiver acesso a este sistema.
+        const r = await core.acesso.entrar(SLUG_SISTEMA);
+        this.updateCurrentUser({
+            id: r.usuario.id,
+            email: r.usuario.email,
+            nome: r.usuario.nome,
+            perfil: PERFIL_POR_PAPEL[r.papel] || 'VISAO'
+        });
+        return true;
     },
 
     updateCurrentUser(user) {
@@ -192,37 +77,10 @@ SGE_ETL.auth = {
         }
     },
 
-    async login(email, password) {
-        if (!window.supabase) throw new Error('Supabase client não inicializado');
-        const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-
-        this.updateCurrentUser({
-            id: data.user.id,
-            email: data.user.email,
-            nome: data.user.user_metadata?.nome || data.user.email.split('@')[0],
-            perfil: data.user.user_metadata?.perfil || 'GESTAO'
-        });
-
-        await this.registerSession(data.user.id, data.session?.access_token);
-        return { success: true, data };
-    },
+    // O login agora é só pela Central.
+    async login() { throw new Error('Entre pela Central do SGE.'); },
 
     async logout() {
-        if (window.SGE_SESSION_PING) window.SGE_SESSION_PING.stop();
-        ['sge_session_id', 'sge_session_user_id', 'sge_session_token', 'sge_session_user_name',
-         'sge_session_user_email', 'sge_session_app_slug', 'sge_session_app_name'].forEach(k => localStorage.removeItem(k));
-
-        if (ssoClient && ssoClient.isBypass()) {
-            if (window.supabase) await window.supabase.auth.signOut();
-            window.location.reload();
-            return;
-        }
-
-        if (ssoClient) ssoClient.logout();
-        else {
-            if (window.supabase) await window.supabase.auth.signOut();
-            window.location.reload();
-        }
+        window.SGECore.acesso.sair(SLUG_SISTEMA);
     }
 };
